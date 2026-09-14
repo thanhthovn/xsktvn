@@ -3,218 +3,499 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XSKTVN - Tra cứu kết quả xổ số</title>
+    <title>[XSKTVN] Terminal // Access Granted</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #0f172a;
-            padding: 20px;
-            color: #e2e8f0;
-            min-height: 100vh;
+
+        :root {
+            --green: #00ff41;
+            --green-dim: #00cc33;
+            --green-dark: #003300;
+            --bg: #0a0e0a;
+            --bg-panel: #0d120d;
+            --red: #ff2a2a;
+            --yellow: #ffd700;
+            --cyan: #00ffff;
         }
+
+        body {
+            font-family: 'JetBrains Mono', 'Share Tech Mono', 'Courier New', monospace;
+            background: #000;
+            background-image:
+                repeating-linear-gradient(0deg, rgba(0, 255, 65, 0.03) 0px, rgba(0, 255, 65, 0.03) 1px, transparent 1px, transparent 3px),
+                radial-gradient(ellipse at center, #0a140a 0%, #000 100%);
+            min-height: 100vh;
+            color: var(--green);
+            padding: 15px;
+            font-size: 13px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Hiệu ứng scanline */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 255, 65, 0.04) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100vh; }
+        }
+
+        /* Con trỏ nhấp nháy */
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
         .container {
             max-width: 1500px;
             margin: 0 auto;
-            background: #1e293b;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            padding: 25px 30px 35px;
-            border: 1px solid #334155;
+            background: var(--bg-panel);
+            border: 2px solid var(--green);
+            border-radius: 4px;
+            box-shadow:
+                0 0 20px rgba(0, 255, 65, 0.3),
+                inset 0 0 20px rgba(0, 255, 65, 0.05);
+            padding: 20px 25px 30px;
+            position: relative;
         }
+
+        /* Thanh tiêu đề giả terminal */
+        .titlebar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+            border-bottom: 1px dashed var(--green-dim);
+            font-size: 0.85rem;
+            color: var(--green-dim);
+        }
+        .titlebar .dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            display: inline-block;
+        }
+        .dot.red { background: #ff5f56; box-shadow: 0 0 6px #ff5f56; }
+        .dot.yellow { background: #ffbd2e; box-shadow: 0 0 6px #ffbd2e; }
+        .dot.green { background: #27c93f; box-shadow: 0 0 6px #27c93f; }
+        .titlebar .path {
+            margin-left: auto;
+            color: var(--green-dim);
+        }
+
         h1 {
-            text-align: center; font-size: 1.9rem;
-            color: #f1f5f9; margin-bottom: 6px;
+            text-align: center;
+            font-size: 1.7rem;
+            color: var(--green);
+            margin-bottom: 6px;
+            text-shadow:
+                0 0 5px var(--green),
+                0 0 10px var(--green),
+                0 0 20px var(--green-dim);
+            letter-spacing: 2px;
+            font-weight: 800;
         }
+        h1::before { content: '> '; color: var(--green-dim); }
+        h1::after {
+            content: '_';
+            animation: blink 1s infinite;
+            color: var(--green);
+        }
+
         .sub-title {
-            text-align: center; font-size: 1.05rem;
-            color: #94a3b8; margin-bottom: 22px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--green-dim);
+            margin-bottom: 20px;
+            letter-spacing: 1px;
         }
+        .sub-title::before { content: '// '; color: #00aa2c; }
+
+        /* ===== FORM CHỌN NGÀY ===== */
         .date-form {
             display: flex; justify-content: center; align-items: center;
-            gap: 12px; flex-wrap: wrap; padding: 18px;
-            background: #0f172a; border: 1px solid #334155;
-            border-radius: 10px; margin-bottom: 20px;
+            gap: 12px; flex-wrap: wrap; padding: 15px;
+            background: rgba(0, 255, 65, 0.03);
+            border: 1px solid var(--green-dim);
+            border-radius: 4px;
+            margin-bottom: 18px;
+            font-size: 0.9rem;
         }
-        .date-form label { font-weight: 600; color: #cbd5e1; }
+        .date-form label {
+            font-weight: 700;
+            color: var(--green);
+            text-shadow: 0 0 4px var(--green-dim);
+        }
+        .date-form label::before { content: '$ '; color: var(--green-dim); }
         .date-form input[type="date"] {
-            padding: 9px 14px; font-size: 1rem;
-            border: 2px solid #475569; border-radius: 8px;
-            background: #1e293b; color: #f1f5f9;
+            padding: 8px 12px; font-size: 0.9rem;
+            font-family: inherit;
+            border: 1px solid var(--green);
+            border-radius: 3px;
+            background: #000;
+            color: var(--green);
             color-scheme: dark;
+            text-shadow: 0 0 4px var(--green-dim);
+            outline: none;
         }
         .date-form input[type="date"]:focus {
-            outline: none; border-color: #3b82f6;
+            box-shadow: 0 0 12px var(--green);
         }
         .date-form button {
-            padding: 10px 26px; font-size: 1rem; font-weight: 700;
-            color: #fff; background: linear-gradient(135deg, #2563eb, #3b82f6);
-            border: none; border-radius: 8px; cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
+            padding: 9px 22px; font-size: 0.9rem; font-weight: 700;
+            font-family: inherit;
+            color: #000;
+            background: var(--green);
+            border: 1px solid var(--green);
+            border-radius: 3px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+            transition: all 0.15s;
         }
         .date-form button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 14px rgba(59, 130, 246, 0.4);
+            background: #000;
+            color: var(--green);
+            box-shadow: 0 0 20px var(--green);
         }
+
+        /* ===== THỐNG KÊ ===== */
         .stats {
-            display: flex; justify-content: center; gap: 20px;
-            flex-wrap: wrap; margin-bottom: 20px;
+            display: flex; justify-content: center; gap: 15px;
+            flex-wrap: wrap; margin-bottom: 18px;
         }
         .stat-box {
-            background: #0f172a; border: 1px solid #334155;
-            border-radius: 10px; padding: 12px 20px;
-            text-align: center; min-width: 160px;
+            background: rgba(0, 255, 65, 0.04);
+            border: 1px solid var(--green-dim);
+            border-left: 3px solid var(--green);
+            border-radius: 3px;
+            padding: 10px 18px;
+            text-align: center; min-width: 150px;
         }
-        .stat-box .num { font-size: 1.5rem; font-weight: 800; color: #60a5fa; }
-        .stat-box .label { font-size: 0.82rem; color: #94a3b8; margin-top: 4px; }
+        .stat-box .num {
+            font-size: 1.4rem; font-weight: 800;
+            color: var(--green);
+            text-shadow: 0 0 8px var(--green);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .stat-box .label {
+            font-size: 0.72rem; color: var(--green-dim);
+            margin-top: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
+        /* ===== TRẠNG THÁI ===== */
         .status {
-            text-align: center; padding: 14px; font-size: 1rem;
-            border-radius: 8px; margin-bottom: 20px; display: none;
+            text-align: center;
+            padding: 12px;
+            font-size: 0.88rem;
+            border-radius: 3px;
+            margin-bottom: 18px;
+            display: none;
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 0.5px;
         }
-        .status.loading { display: block; background: #1e3a5f; color: #93c5fd; border: 1px solid #1e40af; }
-        .status.error   { display: block; background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; }
-        .status.success { display: block; background: #052e16; color: #86efac; border: 1px solid #166534; }
+        .status::before { content: '> '; color: var(--green-dim); }
+        .status.loading {
+            display: block;
+            background: rgba(0, 255, 255, 0.05);
+            color: var(--cyan);
+            border: 1px solid var(--cyan);
+            text-shadow: 0 0 6px var(--cyan);
+        }
+        .status.error {
+            display: block;
+            background: rgba(255, 42, 42, 0.05);
+            color: var(--red);
+            border: 1px solid var(--red);
+            text-shadow: 0 0 6px var(--red);
+        }
+        .status.success {
+            display: block;
+            background: rgba(0, 255, 65, 0.05);
+            color: var(--green);
+            border: 1px solid var(--green);
+            text-shadow: 0 0 6px var(--green);
+        }
 
-        .calendar-section { margin-bottom: 30px; }
+        /* ===== LỊCH TRẠNG THÁI ===== */
+        .calendar-section { margin-bottom: 25px; }
         .calendar-title {
-            font-size: 1.15rem; font-weight: 700; color: #f1f5f9;
-            margin-bottom: 12px; display: flex;
-            justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 10px;
+            font-size: 1rem; font-weight: 700;
+            color: var(--green);
+            margin-bottom: 10px;
+            display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 10px;
+            text-shadow: 0 0 5px var(--green-dim);
         }
+        .calendar-title::before { content: '┌─ '; color: var(--green-dim); }
+        .calendar-title::after { content: ' ─┐'; color: var(--green-dim); }
+
         .legend {
-            display: flex; gap: 16px; font-size: 0.85rem;
-            font-weight: 500; color: #94a3b8;
+            display: flex; gap: 14px; font-size: 0.75rem;
+            color: var(--green-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .legend-item { display: flex; align-items: center; gap: 5px; }
-        .legend-dot { width: 14px; height: 14px; border-radius: 3px; }
-        .legend-dot.have { background: #22c55e; }
-        .legend-dot.missing { background: #334155; border: 1px solid #475569; }
-
-        .month-grid { margin-bottom: 20px; }
-        .month-title {
-            font-weight: 700; color: #cbd5e1;
-            margin-bottom: 8px; font-size: 0.95rem;
+        .legend-dot {
+            width: 11px; height: 11px;
+            border-radius: 2px;
         }
+        .legend-dot.have {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+        .legend-dot.missing {
+            background: transparent;
+            border: 1px solid var(--green-dim);
+        }
+
+        .month-grid { margin-bottom: 16px; }
+        .month-title {
+            font-weight: 700; color: var(--green-dim);
+            margin-bottom: 6px; font-size: 0.82rem;
+            letter-spacing: 1px;
+        }
+        .month-title::before { content: '▸ '; color: var(--green); }
         .days-row {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
-            gap: 4px;
+            grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+            gap: 3px;
         }
         .day-cell {
             aspect-ratio: 1;
             display: flex; align-items: center; justify-content: center;
-            border-radius: 5px; font-size: 0.78rem; font-weight: 600;
-            cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-            border: 1px solid transparent; user-select: none;
+            border-radius: 2px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+            user-select: none;
+            font-family: 'Share Tech Mono', monospace;
         }
         .day-cell.have {
-            background: #15803d; color: #f0fdf4;
-            border-color: #22c55e;
+            background: rgba(0, 255, 65, 0.12);
+            color: var(--green);
+            border: 1px solid var(--green);
+            text-shadow: 0 0 5px var(--green);
         }
         .day-cell.have:hover {
+            background: var(--green);
+            color: #000;
+            box-shadow: 0 0 15px var(--green), 0 0 30px rgba(0, 255, 65, 0.5);
             transform: scale(1.15);
-            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.5);
-            background: #22c55e;
+            text-shadow: none;
         }
         .day-cell.missing {
-            background: #1e293b; color: #64748b;
-            cursor: not-allowed; border-color: #334155;
+            background: transparent;
+            color: #1a331a;
+            cursor: not-allowed;
+            border: 1px solid #1a331a;
         }
-        .day-cell.today { border: 2px solid #ef4444; font-weight: 800; }
+        .day-cell.today {
+            border: 2px solid var(--red);
+            box-shadow: 0 0 8px rgba(255, 42, 42, 0.5);
+            color: var(--red);
+        }
+        .day-cell.today.have {
+            color: var(--red);
+            background: rgba(255, 42, 42, 0.1);
+        }
 
-        .region { margin-bottom: 35px; }
+        /* ===== KẾT QUẢ ===== */
+        .region { margin-bottom: 28px; }
         .region-header {
-            font-size: 1.3rem; font-weight: 700; color: #fff;
-            padding: 10px 20px; border-radius: 8px 8px 0 0;
+            font-size: 1.05rem; font-weight: 700;
+            padding: 8px 15px;
+            border-radius: 3px 3px 0 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
         }
-        .region-nam .region-header   { background: linear-gradient(135deg,#065f46,#059669); }
-        .region-trung .region-header { background: linear-gradient(135deg,#1e3a8a,#2563eb); }
-        .region-bac .region-header   { background: linear-gradient(135deg,#7f1d1d,#dc2626); }
+        .region-header::before { content: '>>> '; opacity: 0.7; }
+
+        .region-nam .region-header {
+            background: linear-gradient(90deg, #003300, #005500);
+            color: var(--green);
+            border: 1px solid var(--green);
+            text-shadow: 0 0 6px var(--green);
+        }
+        .region-trung .region-header {
+            background: linear-gradient(90deg, #001a33, #003366);
+            color: var(--cyan);
+            border: 1px solid var(--cyan);
+            text-shadow: 0 0 6px var(--cyan);
+        }
+        .region-bac .region-header {
+            background: linear-gradient(90deg, #330000, #660000);
+            color: var(--red);
+            border: 1px solid var(--red);
+            text-shadow: 0 0 6px var(--red);
+        }
 
         .station-grid {
             display: grid; gap: 0;
-            border: 1px solid #334155; border-top: none;
-            border-radius: 0 0 8px 8px; overflow: hidden;
+            border: 1px solid var(--green-dim);
+            border-top: none;
+            border-radius: 0 0 3px 3px;
+            overflow: hidden;
         }
         .region-nam .station-grid,
         .region-trung .station-grid { grid-template-columns: repeat(3, 1fr); }
-        .region-bac .station-grid   { grid-template-columns: 1fr; }
+        .region-bac .station-grid { grid-template-columns: 1fr; }
 
         .station-card {
-            border-right: 1px solid #334155; background: #1e293b;
+            border-right: 1px dashed var(--green-dark);
+            background: rgba(0, 255, 65, 0.02);
         }
         .station-card:last-child { border-right: none; }
 
         .station-header {
-            background: #0f172a; padding: 10px 14px;
-            border-bottom: 2px solid #334155;
+            background: rgba(0, 255, 65, 0.06);
+            padding: 8px 12px;
+            border-bottom: 1px dashed var(--green-dim);
             display: flex; justify-content: space-between;
             align-items: center; flex-wrap: wrap; gap: 4px;
         }
-        .station-name { font-weight: 700; font-size: 1.15rem; color: #f1f5f9; }
+        .station-name {
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--green);
+            text-shadow: 0 0 6px var(--green-dim);
+            letter-spacing: 1px;
+        }
+        .station-name::before { content: '['; color: var(--green-dim); }
+        .station-name::after { content: ']'; color: var(--green-dim); }
         .station-code {
-            font-size: 0.75rem; color: #94a3b8; background: #1e293b;
-            padding: 2px 10px; border-radius: 12px;
-            border: 1px solid #475569;
+            font-size: 0.68rem;
+            color: var(--green-dim);
+            padding: 2px 8px;
+            border: 1px dashed var(--green-dark);
+            border-radius: 2px;
+            font-family: 'Share Tech Mono', monospace;
         }
 
-        .prize-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
-        .prize-table tr { border-bottom: 1px solid #334155; }
+        .prize-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .prize-table tr { border-bottom: 1px dashed var(--green-dark); }
         .prize-table tr:last-child { border-bottom: none; }
-        .prize-table tr:hover { background: rgba(59, 130, 246, 0.08); }
+        .prize-table tr:hover {
+            background: rgba(0, 255, 65, 0.05);
+        }
         .prize-label {
-            padding: 7px 8px 7px 14px; font-weight: 600; color: #cbd5e1;
-            width: 80px; vertical-align: top; font-size: 0.82rem;
-            background: #0f172a; white-space: nowrap;
+            padding: 6px 8px 6px 12px;
+            font-weight: 600;
+            color: var(--green-dim);
+            width: 90px;
+            vertical-align: top;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
         }
         .prize-numbers {
-            padding: 7px 10px; font-family: 'Courier New', monospace;
-            font-size: 0.95rem; font-weight: 600; color: #f1f5f9;
-            line-height: 1.7; word-spacing: 8px;
+            padding: 6px 10px;
+            font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--green);
+            line-height: 1.6;
+            word-spacing: 8px;
+            text-shadow: 0 0 4px var(--green-dim);
+            letter-spacing: 0.5px;
         }
         .special-prize {
-            color: #fbbf24; font-size: 1.15rem; font-weight: 800;
-            text-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+            color: var(--yellow);
+            font-size: 1.15rem;
+            font-weight: 800;
+            text-shadow:
+                0 0 6px var(--yellow),
+                0 0 12px rgba(255, 215, 0, 0.6);
+            letter-spacing: 1px;
         }
 
         .footer {
-            text-align: center; margin-top: 35px;
-            font-size: 0.88rem; color: #64748b;
-            border-top: 1px solid #334155; padding-top: 18px;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.75rem;
+            color: var(--green-dim);
+            border-top: 1px dashed var(--green-dark);
+            padding-top: 15px;
+            letter-spacing: 1px;
         }
-        .footer a { color: #60a5fa; text-decoration: none; }
-        .footer a:hover { text-decoration: underline; }
+        .footer::before {
+            content: '[EOF] ';
+            color: var(--green);
+        }
+        .footer a {
+            color: var(--green);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--green-dim);
+        }
+        .footer a:hover {
+            text-shadow: 0 0 8px var(--green);
+            border-bottom-color: var(--green);
+        }
 
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb {
+            background: var(--green-dark);
+            border: 1px solid var(--green-dim);
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--green-dim); }
 
         @media (max-width: 992px) {
             .region-nam .station-grid,
             .region-trung .station-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 650px) {
+            body { padding: 8px; font-size: 12px; }
             .container { padding: 15px; }
-            h1 { font-size: 1.4rem; }
+            h1 { font-size: 1.2rem; letter-spacing: 1px; }
             .region-nam .station-grid,
             .region-trung .station-grid { grid-template-columns: 1fr; }
-            .station-card { border-right: none; border-bottom: 1px solid #334155; }
-            .days-row { grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); }
+            .station-card {
+                border-right: none;
+                border-bottom: 1px dashed var(--green-dark);
+            }
+            .days-row { grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎰 XSKTVN</h1>
-        <div class="sub-title">Tra cứu kết quả xổ số 3 miền</div>
+        <!-- Giả thanh tiêu đề terminal -->
+        <div class="titlebar">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <span class="path">~/xsktvn/terminal</span>
+        </div>
+
+        <h1>XSKTVN</h1>
+        <div class="sub-title">KẾT QUẢ XỔ SỐ 3 MIỀN // AUTO-SCRAPED DAILY</div>
 
         <div class="date-form">
-            <label for="dateInput">📅 Chọn ngày:</label>
+            <label for="dateInput">SELECT_DATE</label>
             <input type="date" id="dateInput" />
-            <button id="btnSearch">Xem kết quả</button>
+            <button id="btnSearch">EXECUTE</button>
         </div>
 
         <div class="status" id="status"></div>
@@ -222,25 +503,25 @@
         <div class="stats" id="stats" style="display:none;">
             <div class="stat-box">
                 <div class="num" id="statTotal">0</div>
-                <div class="label">Ngày có dữ liệu</div>
+                <div class="label">Days_Available</div>
             </div>
             <div class="stat-box">
-                <div class="num" id="statUpdated" style="font-size:1rem;">-</div>
-                <div class="label">Cập nhật lần cuối</div>
+                <div class="num" id="statUpdated" style="font-size:0.85rem;">-</div>
+                <div class="label">Last_Update</div>
             </div>
         </div>
 
         <div class="calendar-section" id="calendarSection" style="display:none;">
             <div class="calendar-title">
-                <span>📆 Trạng thái dữ liệu theo tháng</span>
+                <span>DATA_STATUS_BY_MONTH</span>
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-dot have"></div>
-                        <span>Có dữ liệu</span>
+                        <span>AVAILABLE</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-dot missing"></div>
-                        <span>Chưa có</span>
+                        <span>MISSING</span>
                     </div>
                 </div>
             </div>
@@ -250,7 +531,8 @@
         <div id="result"></div>
 
         <div class="footer">
-            Nguồn: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
+            SOURCE: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
+            &nbsp;|&nbsp; VERSION 2.0
         </div>
     </div>
 
@@ -263,37 +545,24 @@
         const calendarSection = document.getElementById('calendarSection');
         const calendarBox = document.getElementById('calendar');
 
-        // ===== HÀM XỬ LÝ THỜI GIAN VIỆT NAM =====
-
-        /**
-         * Lấy ngày mặc định theo giờ VN:
-         * - Sau 16h VN → hôm nay
-         * - Trước 16h VN → hôm qua
-         */
+        // ===== NGÀY MẶC ĐỊNH THEO GIỜ VN =====
         function getDefaultDateVN() {
             const now = new Date();
-            // Chuyển sang giờ VN (UTC+7)
             const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
             const hourVN = vnTime.getUTCHours();
 
-            // Tạo ngày VN hôm nay
             const vnToday = new Date(Date.UTC(
                 vnTime.getUTCFullYear(),
                 vnTime.getUTCMonth(),
                 vnTime.getUTCDate()
             ));
 
-            // Nếu trước 16h VN → lùi 1 ngày
             if (hourVN < 16) {
                 vnToday.setUTCDate(vnToday.getUTCDate() - 1);
             }
-
             return vnToday.toISOString().split('T')[0];
         }
 
-        /**
-         * Lấy ngày hôm nay thật theo giờ VN (để đánh dấu ô viền đỏ)
-         */
         function getRealTodayVN() {
             const now = new Date();
             const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
@@ -304,9 +573,8 @@
             )).toISOString().split('T')[0];
         }
 
-        const todayIso = getDefaultDateVN();   // Ngày mặc định (theo logic 16h)
-        const realTodayVN = getRealTodayVN();  // Ngày hôm nay thật (để đánh dấu)
-
+        const todayIso = getDefaultDateVN();
+        const realTodayVN = getRealTodayVN();
         dateInput.value = todayIso;
 
         let availableDates = new Set();
@@ -316,11 +584,10 @@
             statusBox.textContent = msg;
         }
 
-        // ===== LOAD INDEX.JSON =====
         async function loadIndex() {
             try {
                 const res = await fetch(`data/index.json?_=${Date.now()}`);
-                if (!res.ok) throw new Error('Chưa có index.json');
+                if (!res.ok) throw new Error('index.json not found');
                 const data = await res.json();
 
                 availableDates = new Set(data.dates || []);
@@ -331,21 +598,19 @@
                 renderCalendar();
                 calendarSection.style.display = 'block';
             } catch (err) {
-                console.warn('Không load được index.json:', err.message);
+                console.warn('Load index failed:', err.message);
                 statsBox.style.display = 'none';
                 calendarSection.style.display = 'none';
             }
         }
 
-        // ===== RENDER LỊCH =====
         function renderCalendar() {
             if (availableDates.size === 0) {
-                calendarBox.innerHTML = '<p style="color:#64748b;">Chưa có dữ liệu.</p>';
+                calendarBox.innerHTML = '<p style="color:#00aa2c;">>> NO_DATA_FOUND</p>';
                 return;
             }
 
             const sortedDates = Array.from(availableDates).sort().reverse();
-
             const months = {};
             sortedDates.forEach(iso => {
                 const [y, m] = iso.split('-');
@@ -355,11 +620,11 @@
             });
 
             const monthKeys = Object.keys(months).sort().reverse();
-
             let html = '';
+
             monthKeys.forEach(key => {
                 const [y, m] = key.split('-');
-                const monthName = `Tháng ${parseInt(m)}/${y}`;
+                const monthName = `MONTH_${m}_${y}`;
                 const days = months[key];
 
                 const dayMap = {};
@@ -371,7 +636,7 @@
                 const daysInMonth = new Date(parseInt(y), parseInt(m), 0).getDate();
 
                 html += `<div class="month-grid">`;
-                html += `<div class="month-title">${monthName} <span style="color:#64748b;font-weight:500;">(${days.length}/${daysInMonth} ngày)</span></div>`;
+                html += `<div class="month-title">${monthName} <span style="opacity:0.6;">[${days.length}/${daysInMonth}]</span></div>`;
                 html += `<div class="days-row">`;
 
                 for (let day = 1; day <= daysInMonth; day++) {
@@ -386,9 +651,9 @@
                     ].filter(Boolean).join(' ');
 
                     if (hasData) {
-                        html += `<div class="${cls}" onclick="selectDate('${iso}')" title="${iso} - Có dữ liệu">${day}</div>`;
+                        html += `<div class="${cls}" onclick="selectDate('${iso}')" title="${iso}">${String(day).padStart(2, '0')}</div>`;
                     } else {
-                        html += `<div class="${cls}" title="${iso} - Chưa có dữ liệu">${day}</div>`;
+                        html += `<div class="${cls}" title="${iso}">${String(day).padStart(2, '0')}</div>`;
                     }
                 }
 
@@ -398,24 +663,22 @@
             calendarBox.innerHTML = html;
         }
 
-        // ===== CHỌN NGÀY TỪ LỊCH =====
         function selectDate(iso) {
             dateInput.value = iso;
             loadResult(iso);
             resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // ===== RENDER KẾT QUẢ =====
         function renderResult(data) {
             if (!data.regions || data.regions.length === 0) {
                 resultBox.innerHTML = '';
-                showStatus('error', 'Không có dữ liệu cho ngày này.');
+                showStatus('error', 'NO_DATA_FOR_THIS_DATE');
                 return;
             }
             let html = '';
             data.regions.forEach(r => {
                 html += `<div class="region region-${r.key}">`;
-                html += `<div class="region-header">📍 ${r.name}</div>`;
+                html += `<div class="region-header">${r.name}</div>`;
                 html += `<div class="station-grid">`;
                 r.stations.forEach(st => {
                     html += `<div class="station-card">
@@ -440,26 +703,25 @@
             resultBox.innerHTML = html;
         }
 
-        // ===== LOAD KẾT QUẢ =====
         async function loadResult(isoDate) {
-            showStatus('loading', '⏳ Đang tải...');
+            showStatus('loading', 'LOADING_DATA...');
             resultBox.innerHTML = '';
             const year = isoDate.slice(0, 4);
             const url = `data/${year}/${isoDate}.json?_=${Date.now()}`;
             try {
                 const res = await fetch(url);
-                if (!res.ok) throw new Error('Chưa có dữ liệu cho ngày này.');
+                if (!res.ok) throw new Error('NO_DATA_FOR_THIS_DATE');
                 const data = await res.json();
-                showStatus('success', `✅ Kết quả ngày ${isoDate.split('-').reverse().join('/')}`);
+                showStatus('success', `ACCESS_GRANTED :: ${isoDate.split('-').reverse().join('/')}`);
                 renderResult(data);
             } catch (err) {
-                showStatus('error', '❌ ' + err.message);
+                showStatus('error', err.message);
             }
         }
 
         btnSearch.addEventListener('click', () => {
             if (!dateInput.value) {
-                showStatus('error', 'Vui lòng chọn ngày.');
+                showStatus('error', 'PLEASE_SELECT_DATE');
                 return;
             }
             loadResult(dateInput.value);

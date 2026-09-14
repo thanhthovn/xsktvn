@@ -186,7 +186,14 @@
             box-shadow: 0 0 20px var(--orange);
         }
 
-        .stats { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 18px; }
+        /* ===== STATS - CHUYỂN XUỐNG CUỐI ===== */
+        .stats {
+            display: flex; justify-content: center; gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed var(--green-dark);
+        }
         .stat-box {
             background: rgba(0, 255, 65, 0.04); border: 1px solid var(--green-dim);
             border-left: 3px solid var(--green); border-radius: 3px;
@@ -303,6 +310,7 @@
             color: var(--red);
         }
 
+        /* ===== KẾT QUẢ ===== */
         .region { margin-bottom: 28px; }
         .region-header {
             font-size: 1.05rem; font-weight: 700;
@@ -408,6 +416,7 @@
             text-shadow: 0 0 6px var(--yellow);
         }
 
+        /* ===== BẢNG XÁC SUẤT ===== */
         .prob-table {
             width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 15px;
         }
@@ -511,6 +520,7 @@
             <button class="tab-btn" onclick="switchTab('tab-prob')">🎲 PHÂN TÍCH XÁC SUẤT</button>
         </div>
 
+        <!-- ===== TAB 1: KẾT QUẢ ===== -->
         <div id="tab-result" class="tab-content active">
             <div class="date-form">
                 <label for="dateInput">SELECT_DATE</label>
@@ -519,17 +529,6 @@
             </div>
 
             <div class="status" id="status"></div>
-
-            <div class="stats" id="stats" style="display:none;">
-                <div class="stat-box">
-                    <div class="num" id="statTotal">0</div>
-                    <div class="label">Days_Available</div>
-                </div>
-                <div class="stat-box">
-                    <div class="num" id="statUpdated" style="font-size:0.85rem;">-</div>
-                    <div class="label">Last_Update</div>
-                </div>
-            </div>
 
             <div class="calendar-section" id="calendarSection" style="display:none;">
                 <div class="calendar-title">
@@ -553,8 +552,21 @@
             </div>
 
             <div id="result"></div>
+
+            <!-- STATS CHUYỂN XUỐNG CUỐI -->
+            <div class="stats" id="stats" style="display:none;">
+                <div class="stat-box">
+                    <div class="num" id="statTotal">0</div>
+                    <div class="label">Days_Available</div>
+                </div>
+                <div class="stat-box">
+                    <div class="num" id="statUpdated" style="font-size:0.85rem;">-</div>
+                    <div class="label">Last_Update</div>
+                </div>
+            </div>
         </div>
 
+        <!-- ===== TAB 2: XÁC SUẤT ===== -->
         <div id="tab-prob" class="tab-content">
             <div class="prob-form">
                 <label>LOẠI</label>
@@ -578,19 +590,19 @@
                 </select>
 
                 <label>SỐ NGÀY</label>
-<select id="probDays">
-    <option value="7">7 ngày</option>
-    <option value="14">14 ngày</option>
-    <option value="21">21 ngày</option>
-    <option value="28">28 ngày</option>
-    <option value="30">30 ngày</option>
-    <option value="49" selected>49 ngày</option>
-    <option value="100">100 ngày</option>
-    <option value="128">128 ngày</option>
-    <option value="256">256 ngày</option>
-    <option value="365">365 ngày</option>
-    <option value="512">512 ngày</option>
-</select>
+                <select id="probDays">
+                    <option value="7">7 ngày</option>
+                    <option value="14">14 ngày</option>
+                    <option value="21">21 ngày</option>
+                    <option value="28">28 ngày</option>
+                    <option value="30">30 ngày</option>
+                    <option value="49" selected>49 ngày</option>
+                    <option value="100">100 ngày</option>
+                    <option value="128">128 ngày</option>
+                    <option value="256">256 ngày</option>
+                    <option value="365">365 ngày</option>
+                    <option value="512">512 ngày</option>
+                </select>
 
                 <div id="probExtraGroup" style="display:none;">
                     <label>NHẬP SỐ</label>
@@ -606,16 +618,18 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 3.2
+            &nbsp;|&nbsp; VERSION 3.3
         </div>
     </div>
 
     <script>
+        // ===== ĐÀI CHÍNH MIỀN NAM THEO THỨ =====
         const MAIN_STATIONS_MN = {
             1: "Đồng Tháp", 2: "Vũng Tàu", 3: "Sóc Trăng",
             4: "Bình Thuận", 5: "Bình Dương", 6: "Bình Phước", 0: "Đà Lạt",
         };
 
+        // ===== DANH SÁCH ĐÀI THEO MIỀN =====
         const STATIONS_BY_REGION = {
             nam: [
                 "TP. HCM", "Đồng Tháp", "Cà Mau",
@@ -639,6 +653,7 @@
             ]
         };
 
+        // ===== BIẾN TOÀN CỤC =====
         const dateInput = document.getElementById('dateInput');
         const btnSearch = document.getElementById('btnSearch');
         const statusBox = document.getElementById('status');
@@ -810,6 +825,7 @@
             }
         }
 
+        // ===== DROPDOWN ĐÀI =====
         function updateStationDropdown() {
             const region = probRegion.value;
             const stations = STATIONS_BY_REGION[region] || [];

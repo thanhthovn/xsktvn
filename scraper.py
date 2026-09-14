@@ -255,7 +255,8 @@ def scrape_date(date_str):
 
 def main():
     today = datetime.now()
-    for i in range(DAYS_TO_SCRAPE):
+    # Bắt đầu từ hôm qua (i=1), bỏ qua hôm nay (i=0)
+    for i in range(1, DAYS_TO_SCRAPE + 1):
         d = today - timedelta(days=i)
         date_str = d.strftime("%d-%m-%Y")
         iso = d.strftime("%Y-%m-%d")

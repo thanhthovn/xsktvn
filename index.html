@@ -19,6 +19,8 @@
             --red: #ff2a2a;
             --yellow: #ffd700;
             --cyan: #00ffff;
+            --orange: #ff4500;
+            --orange-light: #ff8c00;
         }
 
         body {
@@ -35,7 +37,6 @@
             overflow-x: hidden;
         }
 
-        /* Hiệu ứng scanline */
         body::before {
             content: '';
             position: fixed;
@@ -51,7 +52,6 @@
             100% { background-position: 0 100vh; }
         }
 
-        /* Con trỏ nhấp nháy */
         @keyframes blink {
             0%, 49% { opacity: 1; }
             50%, 100% { opacity: 0; }
@@ -63,180 +63,102 @@
             background: var(--bg-panel);
             border: 2px solid var(--green);
             border-radius: 4px;
-            box-shadow:
-                0 0 20px rgba(0, 255, 65, 0.3),
-                inset 0 0 20px rgba(0, 255, 65, 0.05);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05);
             padding: 20px 25px 30px;
             position: relative;
         }
 
-        /* Thanh tiêu đề giả terminal */
         .titlebar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding-bottom: 12px;
-            margin-bottom: 15px;
+            display: flex; align-items: center; gap: 8px;
+            padding-bottom: 12px; margin-bottom: 15px;
             border-bottom: 1px dashed var(--green-dim);
-            font-size: 0.85rem;
-            color: var(--green-dim);
+            font-size: 0.85rem; color: var(--green-dim);
         }
-        .titlebar .dot {
-            width: 12px; height: 12px; border-radius: 50%;
-            display: inline-block;
-        }
+        .titlebar .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
         .dot.red { background: #ff5f56; box-shadow: 0 0 6px #ff5f56; }
         .dot.yellow { background: #ffbd2e; box-shadow: 0 0 6px #ffbd2e; }
         .dot.green { background: #27c93f; box-shadow: 0 0 6px #27c93f; }
-        .titlebar .path {
-            margin-left: auto;
-            color: var(--green-dim);
-        }
+        .titlebar .path { margin-left: auto; color: var(--green-dim); }
 
         h1 {
-            text-align: center;
-            font-size: 1.7rem;
-            color: var(--green);
+            text-align: center; font-size: 1.7rem; color: var(--green);
             margin-bottom: 6px;
-            text-shadow:
-                0 0 5px var(--green),
-                0 0 10px var(--green),
-                0 0 20px var(--green-dim);
-            letter-spacing: 2px;
-            font-weight: 800;
+            text-shadow: 0 0 5px var(--green), 0 0 10px var(--green), 0 0 20px var(--green-dim);
+            letter-spacing: 2px; font-weight: 800;
         }
         h1::before { content: '> '; color: var(--green-dim); }
-        h1::after {
-            content: '_';
-            animation: blink 1s infinite;
-            color: var(--green);
-        }
+        h1::after { content: '_'; animation: blink 1s infinite; color: var(--green); }
 
         .sub-title {
-            text-align: center;
-            font-size: 0.85rem;
-            color: var(--green-dim);
-            margin-bottom: 20px;
-            letter-spacing: 1px;
+            text-align: center; font-size: 0.85rem;
+            color: var(--green-dim); margin-bottom: 20px; letter-spacing: 1px;
         }
         .sub-title::before { content: '// '; color: #00aa2c; }
 
-        /* ===== FORM CHỌN NGÀY ===== */
         .date-form {
             display: flex; justify-content: center; align-items: center;
             gap: 12px; flex-wrap: wrap; padding: 15px;
             background: rgba(0, 255, 65, 0.03);
             border: 1px solid var(--green-dim);
-            border-radius: 4px;
-            margin-bottom: 18px;
-            font-size: 0.9rem;
+            border-radius: 4px; margin-bottom: 18px; font-size: 0.9rem;
         }
-        .date-form label {
-            font-weight: 700;
-            color: var(--green);
-            text-shadow: 0 0 4px var(--green-dim);
-        }
+        .date-form label { font-weight: 700; color: var(--green); text-shadow: 0 0 4px var(--green-dim); }
         .date-form label::before { content: '$ '; color: var(--green-dim); }
         .date-form input[type="date"] {
-            padding: 8px 12px; font-size: 0.9rem;
-            font-family: inherit;
-            border: 1px solid var(--green);
-            border-radius: 3px;
-            background: #000;
-            color: var(--green);
-            color-scheme: dark;
-            text-shadow: 0 0 4px var(--green-dim);
-            outline: none;
+            padding: 8px 12px; font-size: 0.9rem; font-family: inherit;
+            border: 1px solid var(--green); border-radius: 3px;
+            background: #000; color: var(--green);
+            color-scheme: dark; text-shadow: 0 0 4px var(--green-dim); outline: none;
         }
-        .date-form input[type="date"]:focus {
-            box-shadow: 0 0 12px var(--green);
-        }
+        .date-form input[type="date"]:focus { box-shadow: 0 0 12px var(--green); }
         .date-form button {
-            padding: 9px 22px; font-size: 0.9rem; font-weight: 700;
-            font-family: inherit;
-            color: #000;
-            background: var(--green);
-            border: 1px solid var(--green);
-            border-radius: 3px;
-            cursor: pointer;
-            letter-spacing: 1px;
+            padding: 9px 22px; font-size: 0.9rem; font-weight: 700; font-family: inherit;
+            color: #000; background: var(--green); border: 1px solid var(--green);
+            border-radius: 3px; cursor: pointer; letter-spacing: 1px;
             text-transform: uppercase;
             box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
             transition: all 0.15s;
         }
-        .date-form button:hover {
-            background: #000;
-            color: var(--green);
-            box-shadow: 0 0 20px var(--green);
-        }
+        .date-form button:hover { background: #000; color: var(--green); box-shadow: 0 0 20px var(--green); }
 
-        /* ===== THỐNG KÊ ===== */
-        .stats {
-            display: flex; justify-content: center; gap: 15px;
-            flex-wrap: wrap; margin-bottom: 18px;
-        }
+        .stats { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 18px; }
         .stat-box {
-            background: rgba(0, 255, 65, 0.04);
-            border: 1px solid var(--green-dim);
-            border-left: 3px solid var(--green);
-            border-radius: 3px;
-            padding: 10px 18px;
-            text-align: center; min-width: 150px;
+            background: rgba(0, 255, 65, 0.04); border: 1px solid var(--green-dim);
+            border-left: 3px solid var(--green); border-radius: 3px;
+            padding: 10px 18px; text-align: center; min-width: 150px;
         }
         .stat-box .num {
-            font-size: 1.4rem; font-weight: 800;
-            color: var(--green);
-            text-shadow: 0 0 8px var(--green);
-            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.4rem; font-weight: 800; color: var(--green);
+            text-shadow: 0 0 8px var(--green); font-family: 'Share Tech Mono', monospace;
         }
         .stat-box .label {
-            font-size: 0.72rem; color: var(--green-dim);
-            margin-top: 3px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 0.72rem; color: var(--green-dim); margin-top: 3px;
+            text-transform: uppercase; letter-spacing: 1px;
         }
 
-        /* ===== TRẠNG THÁI ===== */
         .status {
-            text-align: center;
-            padding: 12px;
-            font-size: 0.88rem;
-            border-radius: 3px;
-            margin-bottom: 18px;
-            display: none;
-            font-family: 'Share Tech Mono', monospace;
-            letter-spacing: 0.5px;
+            text-align: center; padding: 12px; font-size: 0.88rem;
+            border-radius: 3px; margin-bottom: 18px; display: none;
+            font-family: 'Share Tech Mono', monospace; letter-spacing: 0.5px;
         }
         .status::before { content: '> '; color: var(--green-dim); }
         .status.loading {
-            display: block;
-            background: rgba(0, 255, 255, 0.05);
-            color: var(--cyan);
-            border: 1px solid var(--cyan);
-            text-shadow: 0 0 6px var(--cyan);
+            display: block; background: rgba(0, 255, 255, 0.05);
+            color: var(--cyan); border: 1px solid var(--cyan); text-shadow: 0 0 6px var(--cyan);
         }
         .status.error {
-            display: block;
-            background: rgba(255, 42, 42, 0.05);
-            color: var(--red);
-            border: 1px solid var(--red);
-            text-shadow: 0 0 6px var(--red);
+            display: block; background: rgba(255, 42, 42, 0.05);
+            color: var(--red); border: 1px solid var(--red); text-shadow: 0 0 6px var(--red);
         }
         .status.success {
-            display: block;
-            background: rgba(0, 255, 65, 0.05);
-            color: var(--green);
-            border: 1px solid var(--green);
-            text-shadow: 0 0 6px var(--green);
+            display: block; background: rgba(0, 255, 65, 0.05);
+            color: var(--green); border: 1px solid var(--green); text-shadow: 0 0 6px var(--green);
         }
 
-        /* ===== LỊCH TRẠNG THÁI ===== */
         .calendar-section { margin-bottom: 25px; }
         .calendar-title {
-            font-size: 1rem; font-weight: 700;
-            color: var(--green);
-            margin-bottom: 10px;
-            display: flex; justify-content: space-between;
+            font-size: 1rem; font-weight: 700; color: var(--green);
+            margin-bottom: 10px; display: flex; justify-content: space-between;
             align-items: center; flex-wrap: wrap; gap: 10px;
             text-shadow: 0 0 5px var(--green-dim);
         }
@@ -245,29 +167,17 @@
 
         .legend {
             display: flex; gap: 14px; font-size: 0.75rem;
-            color: var(--green-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: var(--green-dim); text-transform: uppercase; letter-spacing: 0.5px;
         }
         .legend-item { display: flex; align-items: center; gap: 5px; }
-        .legend-dot {
-            width: 11px; height: 11px;
-            border-radius: 2px;
-        }
-        .legend-dot.have {
-            background: var(--green);
-            box-shadow: 0 0 6px var(--green);
-        }
-        .legend-dot.missing {
-            background: transparent;
-            border: 1px solid var(--green-dim);
-        }
+        .legend-dot { width: 11px; height: 11px; border-radius: 2px; }
+        .legend-dot.have { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .legend-dot.missing { background: transparent; border: 1px solid var(--green-dim); }
 
         .month-grid { margin-bottom: 16px; }
         .month-title {
             font-weight: 700; color: var(--green-dim);
-            margin-bottom: 6px; font-size: 0.82rem;
-            letter-spacing: 1px;
+            margin-bottom: 6px; font-size: 0.82rem; letter-spacing: 1px;
         }
         .month-title::before { content: '▸ '; color: var(--green); }
         .days-row {
@@ -278,73 +188,53 @@
         .day-cell {
             aspect-ratio: 1;
             display: flex; align-items: center; justify-content: center;
-            border-radius: 2px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.15s;
-            border: 1px solid transparent;
-            user-select: none;
+            border-radius: 2px; font-size: 0.72rem; font-weight: 700;
+            cursor: pointer; transition: all 0.15s;
+            border: 1px solid transparent; user-select: none;
             font-family: 'Share Tech Mono', monospace;
         }
         .day-cell.have {
-            background: rgba(0, 255, 65, 0.12);
-            color: var(--green);
-            border: 1px solid var(--green);
-            text-shadow: 0 0 5px var(--green);
+            background: rgba(0, 255, 65, 0.12); color: var(--green);
+            border: 1px solid var(--green); text-shadow: 0 0 5px var(--green);
         }
         .day-cell.have:hover {
-            background: var(--green);
-            color: #000;
+            background: var(--green); color: #000;
             box-shadow: 0 0 15px var(--green), 0 0 30px rgba(0, 255, 65, 0.5);
-            transform: scale(1.15);
-            text-shadow: none;
+            transform: scale(1.15); text-shadow: none;
         }
         .day-cell.missing {
-            background: transparent;
-            color: #1a331a;
-            cursor: not-allowed;
-            border: 1px solid #1a331a;
+            background: transparent; color: #1a331a;
+            cursor: not-allowed; border: 1px solid #1a331a;
         }
         .day-cell.today {
             border: 2px solid var(--red);
             box-shadow: 0 0 8px rgba(255, 42, 42, 0.5);
             color: var(--red);
         }
-        .day-cell.today.have {
-            color: var(--red);
-            background: rgba(255, 42, 42, 0.1);
-        }
+        .day-cell.today.have { color: var(--red); background: rgba(255, 42, 42, 0.1); }
 
-        /* ===== KẾT QUẢ ===== */
         .region { margin-bottom: 28px; }
         .region-header {
             font-size: 1.05rem; font-weight: 700;
-            padding: 8px 15px;
-            border-radius: 3px 3px 0 0;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            position: relative;
-            overflow: hidden;
+            padding: 8px 15px; border-radius: 3px 3px 0 0;
+            letter-spacing: 2px; text-transform: uppercase;
+            position: relative; overflow: hidden;
         }
         .region-header::before { content: '>>> '; opacity: 0.7; }
 
         .region-nam .region-header {
             background: linear-gradient(90deg, #003300, #005500);
-            color: var(--green);
-            border: 1px solid var(--green);
+            color: var(--green); border: 1px solid var(--green);
             text-shadow: 0 0 6px var(--green);
         }
         .region-trung .region-header {
             background: linear-gradient(90deg, #001a33, #003366);
-            color: var(--cyan);
-            border: 1px solid var(--cyan);
+            color: var(--cyan); border: 1px solid var(--cyan);
             text-shadow: 0 0 6px var(--cyan);
         }
         .region-bac .region-header {
             background: linear-gradient(90deg, #330000, #660000);
-            color: var(--red);
-            border: 1px solid var(--red);
+            color: var(--red); border: 1px solid var(--red);
             text-shadow: 0 0 6px var(--red);
         }
 
@@ -362,8 +252,54 @@
         .station-card {
             border-right: 1px dashed var(--green-dark);
             background: rgba(0, 255, 65, 0.02);
+            position: relative;
+            transition: box-shadow 0.2s;
         }
         .station-card:last-child { border-right: none; }
+
+        /* ===== ĐÀI CHÍNH MIỀN NAM ===== */
+        .region-nam .station-card.main-station {
+            background: linear-gradient(135deg, rgba(255, 69, 0, 0.18), rgba(255, 140, 0, 0.08));
+            border-right: 2px solid var(--orange);
+        }
+        .region-nam .station-card.main-station::before {
+            content: '★ MAIN';
+            position: absolute; top: 6px; right: 8px;
+            font-size: 0.62rem; font-weight: 800;
+            color: var(--orange-light);
+            background: rgba(255, 69, 0, 0.25);
+            padding: 2px 8px;
+            border: 1px solid var(--orange);
+            border-radius: 3px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 6px var(--orange);
+            z-index: 1;
+        }
+        .region-nam .station-card.main-station .station-header {
+            background: linear-gradient(90deg, rgba(255, 69, 0, 0.3), rgba(255, 140, 0, 0.1));
+            border-bottom: 2px solid var(--orange);
+        }
+        .region-nam .station-card.main-station .station-name {
+            color: var(--orange-light);
+            text-shadow: 0 0 8px var(--orange), 0 0 15px rgba(255, 69, 0, 0.5);
+        }
+        .region-nam .station-card.main-station .station-code {
+            color: var(--orange-light);
+            border-color: var(--orange);
+            background: rgba(255, 69, 0, 0.15);
+        }
+        .region-nam .station-card.main-station .prize-numbers {
+            color: var(--yellow);
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+        }
+        .region-nam .station-card.main-station .special-prize {
+            color: #ff2a2a;
+            text-shadow: 0 0 10px var(--orange), 0 0 20px rgba(255, 69, 0, 0.7);
+            font-size: 1.25rem;
+        }
+        .region-nam .station-card.main-station:hover {
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.4);
+        }
 
         .station-header {
             background: rgba(0, 255, 65, 0.06);
@@ -373,17 +309,14 @@
             align-items: center; flex-wrap: wrap; gap: 4px;
         }
         .station-name {
-            font-weight: 800;
-            font-size: 1rem;
-            color: var(--green);
-            text-shadow: 0 0 6px var(--green-dim);
+            font-weight: 800; font-size: 1rem;
+            color: var(--green); text-shadow: 0 0 6px var(--green-dim);
             letter-spacing: 1px;
         }
         .station-name::before { content: '['; color: var(--green-dim); }
         .station-name::after { content: ']'; color: var(--green-dim); }
         .station-code {
-            font-size: 0.68rem;
-            color: var(--green-dim);
+            font-size: 0.68rem; color: var(--green-dim);
             padding: 2px 8px;
             border: 1px dashed var(--green-dark);
             border-radius: 2px;
@@ -393,65 +326,39 @@
         .prize-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
         .prize-table tr { border-bottom: 1px dashed var(--green-dark); }
         .prize-table tr:last-child { border-bottom: none; }
-        .prize-table tr:hover {
-            background: rgba(0, 255, 65, 0.05);
-        }
+        .prize-table tr:hover { background: rgba(0, 255, 65, 0.05); }
         .prize-label {
             padding: 6px 8px 6px 12px;
-            font-weight: 600;
-            color: var(--green-dim);
-            width: 90px;
-            vertical-align: top;
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-weight: 600; color: var(--green-dim);
+            width: 90px; vertical-align: top; font-size: 0.72rem;
+            text-transform: uppercase; letter-spacing: 0.5px;
             white-space: nowrap;
         }
         .prize-numbers {
             padding: 6px 10px;
             font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
-            font-size: 0.92rem;
-            font-weight: 700;
+            font-size: 0.92rem; font-weight: 700;
             color: var(--green);
-            line-height: 1.6;
-            word-spacing: 8px;
+            line-height: 1.6; word-spacing: 8px;
             text-shadow: 0 0 4px var(--green-dim);
             letter-spacing: 0.5px;
         }
         .special-prize {
-            color: var(--yellow);
-            font-size: 1.15rem;
-            font-weight: 800;
-            text-shadow:
-                0 0 6px var(--yellow),
-                0 0 12px rgba(255, 215, 0, 0.6);
+            color: var(--yellow); font-size: 1.15rem; font-weight: 800;
+            text-shadow: 0 0 6px var(--yellow), 0 0 12px rgba(255, 215, 0, 0.6);
             letter-spacing: 1px;
         }
 
         .footer {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 0.75rem;
-            color: var(--green-dim);
+            text-align: center; margin-top: 30px;
+            font-size: 0.75rem; color: var(--green-dim);
             border-top: 1px dashed var(--green-dark);
-            padding-top: 15px;
-            letter-spacing: 1px;
+            padding-top: 15px; letter-spacing: 1px;
         }
-        .footer::before {
-            content: '[EOF] ';
-            color: var(--green);
-        }
-        .footer a {
-            color: var(--green);
-            text-decoration: none;
-            border-bottom: 1px dashed var(--green-dim);
-        }
-        .footer a:hover {
-            text-shadow: 0 0 8px var(--green);
-            border-bottom-color: var(--green);
-        }
+        .footer::before { content: '[EOF] '; color: var(--green); }
+        .footer a { color: var(--green); text-decoration: none; border-bottom: 1px dashed var(--green-dim); }
+        .footer a:hover { text-shadow: 0 0 8px var(--green); border-bottom-color: var(--green); }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: #000; }
         ::-webkit-scrollbar-thumb {
@@ -471,17 +378,13 @@
             h1 { font-size: 1.2rem; letter-spacing: 1px; }
             .region-nam .station-grid,
             .region-trung .station-grid { grid-template-columns: 1fr; }
-            .station-card {
-                border-right: none;
-                border-bottom: 1px dashed var(--green-dark);
-            }
+            .station-card { border-right: none; border-bottom: 1px dashed var(--green-dark); }
             .days-row { grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Giả thanh tiêu đề terminal -->
         <div class="titlebar">
             <span class="dot red"></span>
             <span class="dot yellow"></span>
@@ -532,11 +435,23 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 2.0
+            &nbsp;|&nbsp; VERSION 2.1
         </div>
     </div>
 
     <script>
+        // ===== ĐÀI CHÍNH MIỀN NAM THEO THỨ =====
+        // JS: 0=Chủ Nhật, 1=Thứ 2, ..., 6=Thứ 7
+        const MAIN_STATIONS_MN = {
+            1: "Đồng Tháp",     // Thứ 2
+            2: "Vũng Tàu",      // Thứ 3
+            3: "Sóc Trăng",     // Thứ 4
+            4: "Bình Thuận",    // Thứ 5
+            5: "Bình Dương",    // Thứ 6
+            6: "Bình Phước",    // Thứ 7
+            0: "Đà Lạt",        // Chủ Nhật
+        };
+
         const dateInput = document.getElementById('dateInput');
         const btnSearch = document.getElementById('btnSearch');
         const statusBox = document.getElementById('status');
@@ -550,13 +465,11 @@
             const now = new Date();
             const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
             const hourVN = vnTime.getUTCHours();
-
             const vnToday = new Date(Date.UTC(
                 vnTime.getUTCFullYear(),
                 vnTime.getUTCMonth(),
                 vnTime.getUTCDate()
             ));
-
             if (hourVN < 16) {
                 vnToday.setUTCDate(vnToday.getUTCDate() - 1);
             }
@@ -578,6 +491,7 @@
         dateInput.value = todayIso;
 
         let availableDates = new Set();
+        let currentIsoDate = todayIso;
 
         function showStatus(type, msg) {
             statusBox.className = 'status ' + type;
@@ -589,12 +503,10 @@
                 const res = await fetch(`data/index.json?_=${Date.now()}`);
                 if (!res.ok) throw new Error('index.json not found');
                 const data = await res.json();
-
                 availableDates = new Set(data.dates || []);
                 document.getElementById('statTotal').textContent = data.total || 0;
                 document.getElementById('statUpdated').textContent = data.updated || '-';
                 statsBox.style.display = 'flex';
-
                 renderCalendar();
                 calendarSection.style.display = 'block';
             } catch (err) {
@@ -609,7 +521,6 @@
                 calendarBox.innerHTML = '<p style="color:#00aa2c;">>> NO_DATA_FOUND</p>';
                 return;
             }
-
             const sortedDates = Array.from(availableDates).sort().reverse();
             const months = {};
             sortedDates.forEach(iso => {
@@ -626,13 +537,11 @@
                 const [y, m] = key.split('-');
                 const monthName = `MONTH_${m}_${y}`;
                 const days = months[key];
-
                 const dayMap = {};
                 days.forEach(iso => {
                     const day = parseInt(iso.split('-')[2]);
                     dayMap[day] = iso;
                 });
-
                 const daysInMonth = new Date(parseInt(y), parseInt(m), 0).getDate();
 
                 html += `<div class="month-grid">`;
@@ -643,7 +552,6 @@
                     const iso = `${y}-${m}-${String(day).padStart(2, '0')}`;
                     const hasData = dayMap[day] !== undefined;
                     const isToday = iso === realTodayVN;
-
                     const cls = [
                         'day-cell',
                         hasData ? 'have' : 'missing',
@@ -656,10 +564,8 @@
                         html += `<div class="${cls}" title="${iso}">${String(day).padStart(2, '0')}</div>`;
                     }
                 }
-
                 html += `</div></div>`;
             });
-
             calendarBox.innerHTML = html;
         }
 
@@ -675,13 +581,24 @@
                 showStatus('error', 'NO_DATA_FOR_THIS_DATE');
                 return;
             }
+
+            // ===== Xác định đài chính miền Nam theo ngày =====
+            const [y, m, d] = currentIsoDate.split('-');
+            const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+            const weekday = dateObj.getDay();  // 0=CN, 1=T2, ..., 6=T7
+            const mainStationName = MAIN_STATIONS_MN[weekday] || "";
+
             let html = '';
             data.regions.forEach(r => {
                 html += `<div class="region region-${r.key}">`;
                 html += `<div class="region-header">${r.name}</div>`;
                 html += `<div class="station-grid">`;
-                r.stations.forEach(st => {
-                    html += `<div class="station-card">
+                r.stations.forEach((st) => {
+                    // Đài chính: miền Nam + tên khớp
+                    const isMain = (r.key === 'nam' && st.name.trim() === mainStationName);
+                    const cardClass = isMain ? 'station-card main-station' : 'station-card';
+
+                    html += `<div class="${cardClass}">
                         <div class="station-header">
                             <span class="station-name">${st.name}</span>
                             <span class="station-code">${st.code || ''}</span>
@@ -704,6 +621,7 @@
         }
 
         async function loadResult(isoDate) {
+            currentIsoDate = isoDate;
             showStatus('loading', 'LOADING_DATA...');
             resultBox.innerHTML = '';
             const year = isoDate.slice(0, 4);
@@ -712,25 +630,4 @@
                 const res = await fetch(url);
                 if (!res.ok) throw new Error('NO_DATA_FOR_THIS_DATE');
                 const data = await res.json();
-                showStatus('success', `ACCESS_GRANTED :: ${isoDate.split('-').reverse().join('/')}`);
-                renderResult(data);
-            } catch (err) {
-                showStatus('error', err.message);
-            }
-        }
-
-        btnSearch.addEventListener('click', () => {
-            if (!dateInput.value) {
-                showStatus('error', 'PLEASE_SELECT_DATE');
-                return;
-            }
-            loadResult(dateInput.value);
-        });
-
-        (async () => {
-            await loadIndex();
-            loadResult(dateInput.value);
-        })();
-    </script>
-</body>
-</html>
+                showStatus('success', `ACCESS_GRANT

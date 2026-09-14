@@ -2,7 +2,8 @@ name: Scrape xổ số
 
 on:
   schedule:
-    - cron: "0 17 * * *"
+    # Chạy lúc 22:00 UTC = 05:00 VN (hôm qua đã có KQ đầy đủ)
+    - cron: "0 22 * * *"
   workflow_dispatch:
 
 permissions:

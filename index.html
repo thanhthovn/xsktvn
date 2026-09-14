@@ -95,23 +95,74 @@
         }
         .sub-title::before { content: '// '; color: #00aa2c; }
 
-        .date-form {
+        /* ===== TABS ===== */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 24px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            background: rgba(0, 255, 65, 0.05);
+            color: var(--green-dim);
+            border: 1px solid var(--green-dim);
+            border-radius: 3px;
+            transition: all 0.15s;
+        }
+        .tab-btn:hover {
+            background: rgba(0, 255, 65, 0.15);
+            color: var(--green);
+        }
+        .tab-btn.active {
+            background: var(--green);
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ===== FORM ===== */
+        .date-form, .prob-form {
             display: flex; justify-content: center; align-items: center;
             gap: 12px; flex-wrap: wrap; padding: 15px;
             background: rgba(0, 255, 65, 0.03);
             border: 1px solid var(--green-dim);
             border-radius: 4px; margin-bottom: 18px; font-size: 0.9rem;
         }
-        .date-form label { font-weight: 700; color: var(--green); text-shadow: 0 0 4px var(--green-dim); }
-        .date-form label::before { content: '$ '; color: var(--green-dim); }
-        .date-form input[type="date"] {
+        .date-form label, .prob-form label {
+            font-weight: 700; color: var(--green);
+            text-shadow: 0 0 4px var(--green-dim);
+        }
+        .date-form label::before, .prob-form label::before {
+            content: '$ '; color: var(--green-dim);
+        }
+        .date-form input[type="date"],
+        .prob-form input[type="number"],
+        .prob-form input[type="text"],
+        .prob-form select {
             padding: 8px 12px; font-size: 0.9rem; font-family: inherit;
             border: 1px solid var(--green); border-radius: 3px;
             background: #000; color: var(--green);
-            color-scheme: dark; text-shadow: 0 0 4px var(--green-dim); outline: none;
+            color-scheme: dark;
+            outline: none;
         }
-        .date-form input[type="date"]:focus { box-shadow: 0 0 12px var(--green); }
-        .date-form button {
+        .prob-form input[type="number"] { width: 70px; }
+        .prob-form input[type="text"] { width: 220px; }
+        .prob-form select { cursor: pointer; }
+        .date-form input:focus, .prob-form input:focus, .prob-form select:focus {
+            box-shadow: 0 0 12px var(--green);
+        }
+
+        .btn {
             padding: 9px 22px; font-size: 0.9rem; font-weight: 700; font-family: inherit;
             color: #000; background: var(--green); border: 1px solid var(--green);
             border-radius: 3px; cursor: pointer; letter-spacing: 1px;
@@ -119,7 +170,23 @@
             box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
             transition: all 0.15s;
         }
-        .date-form button:hover { background: #000; color: var(--green); box-shadow: 0 0 20px var(--green); }
+        .btn:hover {
+            background: #000; color: var(--green);
+            box-shadow: 0 0 20px var(--green);
+        }
+        .btn:disabled {
+            opacity: 0.4; cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn-orange {
+            background: var(--orange); border-color: var(--orange);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+        }
+        .btn-orange:hover {
+            background: #000; color: var(--orange);
+            box-shadow: 0 0 20px var(--orange);
+        }
 
         .stats { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 18px; }
         .stat-box {
@@ -155,16 +222,13 @@
             color: var(--green); border: 1px solid var(--green); text-shadow: 0 0 6px var(--green);
         }
 
+        /* ===== LỊCH ===== */
         .calendar-section { margin-bottom: 25px; }
         .calendar-title {
             font-size: 1rem; font-weight: 700; color: var(--green);
             margin-bottom: 10px; display: flex; justify-content: space-between;
             align-items: center; flex-wrap: wrap; gap: 10px;
-            text-shadow: 0 0 5px var(--green-dim);
         }
-        .calendar-title::before { content: '┌─ '; color: var(--green-dim); }
-        .calendar-title::after { content: ' ─┐'; color: var(--green-dim); }
-
         .legend {
             display: flex; gap: 14px; font-size: 0.75rem;
             color: var(--green-dim); text-transform: uppercase; letter-spacing: 0.5px;
@@ -179,7 +243,6 @@
             font-weight: 700; color: var(--green-dim);
             margin-bottom: 6px; font-size: 0.82rem; letter-spacing: 1px;
         }
-        .month-title::before { content: '▸ '; color: var(--green); }
         .days-row {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
@@ -211,17 +274,15 @@
             box-shadow: 0 0 8px rgba(255, 42, 42, 0.5);
             color: var(--red);
         }
-        .day-cell.today.have { color: var(--red); background: rgba(255, 42, 42, 0.1); }
 
+        /* ===== KẾT QUẢ XỔ SỐ ===== */
         .region { margin-bottom: 28px; }
         .region-header {
             font-size: 1.05rem; font-weight: 700;
             padding: 8px 15px; border-radius: 3px 3px 0 0;
             letter-spacing: 2px; text-transform: uppercase;
-            position: relative; overflow: hidden;
         }
         .region-header::before { content: '>>> '; opacity: 0.7; }
-
         .region-nam .region-header {
             background: linear-gradient(90deg, #003300, #005500);
             color: var(--green); border: 1px solid var(--green);
@@ -240,10 +301,8 @@
 
         .station-grid {
             display: grid; gap: 0;
-            border: 1px solid var(--green-dim);
-            border-top: none;
-            border-radius: 0 0 3px 3px;
-            overflow: hidden;
+            border: 1px solid var(--green-dim); border-top: none;
+            border-radius: 0 0 3px 3px; overflow: hidden;
         }
         .region-nam .station-grid,
         .region-trung .station-grid { grid-template-columns: repeat(3, 1fr); }
@@ -253,39 +312,28 @@
             border-right: 1px dashed var(--green-dark);
             background: rgba(0, 255, 65, 0.02);
             position: relative;
-            transition: box-shadow 0.2s;
         }
         .station-card:last-child { border-right: none; }
 
-        /* ===== ĐÀI CHÍNH MIỀN NAM ===== */
-        .region-nam .station-card.main-station {
+        .station-card.main-station {
             background: linear-gradient(135deg, rgba(255, 69, 0, 0.18), rgba(255, 140, 0, 0.08));
             border-right: 2px solid var(--orange);
         }
-                .region-nam .station-card.main-station .station-header {
+        .station-card.main-station .station-header {
             background: linear-gradient(90deg, rgba(255, 69, 0, 0.3), rgba(255, 140, 0, 0.1));
             border-bottom: 2px solid var(--orange);
         }
-        .region-nam .station-card.main-station .station-name {
+        .station-card.main-station .station-name {
             color: var(--orange-light);
-            text-shadow: 0 0 8px var(--orange), 0 0 15px rgba(255, 69, 0, 0.5);
+            text-shadow: 0 0 8px var(--orange);
         }
-        .region-nam .station-card.main-station .station-code {
-            color: var(--orange-light);
-            border-color: var(--orange);
-            background: rgba(255, 69, 0, 0.15);
-        }
-        .region-nam .station-card.main-station .prize-numbers {
+        .station-card.main-station .prize-numbers {
             color: var(--yellow);
-            text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
         }
-        .region-nam .station-card.main-station .special-prize {
+        .station-card.main-station .special-prize {
             color: #ff2a2a;
             text-shadow: 0 0 10px var(--orange), 0 0 20px rgba(255, 69, 0, 0.7);
             font-size: 1.25rem;
-        }
-        .region-nam .station-card.main-station:hover {
-            box-shadow: 0 0 20px rgba(255, 69, 0, 0.4);
         }
 
         .station-header {
@@ -307,7 +355,6 @@
             padding: 2px 8px;
             border: 1px dashed var(--green-dark);
             border-radius: 2px;
-            font-family: 'Share Tech Mono', monospace;
         }
 
         .prize-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
@@ -318,22 +365,100 @@
             padding: 6px 8px 6px 12px;
             font-weight: 600; color: var(--green-dim);
             width: 90px; vertical-align: top; font-size: 0.72rem;
-            text-transform: uppercase; letter-spacing: 0.5px;
+            text-transform: uppercase;
             white-space: nowrap;
         }
         .prize-numbers {
             padding: 6px 10px;
-            font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+            font-family: 'Share Tech Mono', monospace;
             font-size: 0.92rem; font-weight: 700;
             color: var(--green);
             line-height: 1.6; word-spacing: 8px;
             text-shadow: 0 0 4px var(--green-dim);
-            letter-spacing: 0.5px;
         }
         .special-prize {
             color: var(--yellow); font-size: 1.15rem; font-weight: 800;
-            text-shadow: 0 0 6px var(--yellow), 0 0 12px rgba(255, 215, 0, 0.6);
+            text-shadow: 0 0 6px var(--yellow);
+        }
+
+        /* ===== BẢNG XÁC SUẤT ===== */
+        .prob-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 15px;
+        }
+        .prob-table thead th {
+            background: rgba(0, 255, 65, 0.1);
+            color: var(--green);
+            padding: 10px;
+            border: 1px solid var(--green-dim);
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 0.75rem;
             letter-spacing: 1px;
+        }
+        .prob-table tbody td {
+            padding: 8px 10px;
+            border: 1px dashed var(--green-dark);
+            text-align: center;
+            color: var(--green);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .prob-table tbody tr:hover {
+            background: rgba(0, 255, 65, 0.05);
+        }
+        .prob-table .rank {
+            color: var(--yellow);
+            font-weight: 800;
+        }
+        .prob-table .num-highlight {
+            color: var(--yellow);
+            font-weight: 800;
+            font-size: 1rem;
+            text-shadow: 0 0 6px var(--yellow);
+        }
+        .prob-table .bar {
+            display: inline-block;
+            height: 10px;
+            background: linear-gradient(90deg, var(--green-dim), var(--green));
+            border-radius: 2px;
+            vertical-align: middle;
+            margin-left: 8px;
+            box-shadow: 0 0 6px var(--green-dim);
+        }
+        .prob-table .percent {
+            color: var(--cyan);
+            font-weight: 700;
+        }
+
+        .prob-summary {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .prob-summary .box {
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid var(--yellow);
+            border-radius: 3px;
+            padding: 10px 18px;
+            text-align: center;
+            min-width: 140px;
+        }
+        .prob-summary .box .val {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--yellow);
+            text-shadow: 0 0 8px var(--yellow);
+        }
+        .prob-summary .box .lbl {
+            font-size: 0.7rem;
+            color: var(--yellow);
+            opacity: 0.8;
+            text-transform: uppercase;
+            margin-top: 3px;
         }
 
         .footer {
@@ -344,7 +469,6 @@
         }
         .footer::before { content: '[EOF] '; color: var(--green); }
         .footer a { color: var(--green); text-decoration: none; border-bottom: 1px dashed var(--green-dim); }
-        .footer a:hover { text-shadow: 0 0 8px var(--green); border-bottom-color: var(--green); }
 
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: #000; }
@@ -353,7 +477,6 @@
             border: 1px solid var(--green-dim);
             border-radius: 2px;
         }
-        ::-webkit-scrollbar-thumb:hover { background: var(--green-dim); }
 
         @media (max-width: 992px) {
             .region-nam .station-grid,
@@ -362,11 +485,12 @@
         @media (max-width: 650px) {
             body { padding: 8px; font-size: 12px; }
             .container { padding: 15px; }
-            h1 { font-size: 1.2rem; letter-spacing: 1px; }
+            h1 { font-size: 1.2rem; }
             .region-nam .station-grid,
             .region-trung .station-grid { grid-template-columns: 1fr; }
             .station-card { border-right: none; border-bottom: 1px dashed var(--green-dark); }
             .days-row { grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); }
+            .prob-table { font-size: 0.75rem; }
         }
     </style>
 </head>
@@ -382,53 +506,101 @@
         <h1>XSKTVN</h1>
         <div class="sub-title">KẾT QUẢ XỔ SỐ 3 MIỀN // AUTO-SCRAPED DAILY</div>
 
-        <div class="date-form">
-            <label for="dateInput">SELECT_DATE</label>
-            <input type="date" id="dateInput" />
-            <button id="btnSearch">EXECUTE</button>
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('tab-result')">📊 XEM KẾT QUẢ</button>
+            <button class="tab-btn" onclick="switchTab('tab-prob')">🎲 PHÂN TÍCH XÁC SUẤT</button>
         </div>
 
-        <div class="status" id="status"></div>
-
-        <div class="stats" id="stats" style="display:none;">
-            <div class="stat-box">
-                <div class="num" id="statTotal">0</div>
-                <div class="label">Days_Available</div>
+        <!-- ===== TAB 1: KẾT QUẢ ===== -->
+        <div id="tab-result" class="tab-content active">
+            <div class="date-form">
+                <label for="dateInput">SELECT_DATE</label>
+                <input type="date" id="dateInput" />
+                <button class="btn" id="btnSearch">XEM KẾT QUẢ</button>
             </div>
-            <div class="stat-box">
-                <div class="num" id="statUpdated" style="font-size:0.85rem;">-</div>
-                <div class="label">Last_Update</div>
-            </div>
-        </div>
 
-        <div class="calendar-section" id="calendarSection" style="display:none;">
-            <div class="calendar-title">
-                <span>DATA_STATUS_BY_MONTH</span>
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-dot have"></div>
-                        <span>AVAILABLE</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot missing"></div>
-                        <span>MISSING</span>
-                    </div>
+            <div class="status" id="status"></div>
+
+            <div class="stats" id="stats" style="display:none;">
+                <div class="stat-box">
+                    <div class="num" id="statTotal">0</div>
+                    <div class="label">Days_Available</div>
+                </div>
+                <div class="stat-box">
+                    <div class="num" id="statUpdated" style="font-size:0.85rem;">-</div>
+                    <div class="label">Last_Update</div>
                 </div>
             </div>
-            <div id="calendar"></div>
+
+            <div class="calendar-section" id="calendarSection" style="display:none;">
+                <div class="calendar-title">
+                    <span>DATA_STATUS_BY_MONTH</span>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-dot have"></div>
+                            <span>AVAILABLE</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot missing"></div>
+                            <span>MISSING</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="calendar"></div>
+            </div>
+
+            <div id="result"></div>
         </div>
 
-        <div id="result"></div>
+        <!-- ===== TAB 2: XÁC SUẤT ===== -->
+        <div id="tab-prob" class="tab-content">
+            <div class="prob-form">
+                <label>LOẠI</label>
+                <select id="probType">
+                    <option value="2so">2 số đuôi</option>
+                    <option value="3so">3 số đuôi</option>
+                    <option value="cap">Cặp số (MB)</option>
+                    <option value="bo3">Bộ 3 số (MB)</option>
+                </select>
+
+                <label>MIỀN</label>
+                <select id="probRegion">
+                    <option value="nam">Miền Nam</option>
+                    <option value="trung">Miền Trung</option>
+                    <option value="bac">Miền Bắc</option>
+                </select>
+
+                <label>SỐ NGÀY</label>
+                <select id="probDays">
+                    <option value="7">7 ngày</option>
+                    <option value="30" selected>30 ngày</option>
+                    <option value="60">60 ngày</option>
+                    <option value="90">90 ngày</option>
+                    <option value="180">180 ngày</option>
+                    <option value="365">365 ngày</option>
+                </select>
+
+                <div id="probExtraGroup" style="display:none;">
+                    <label>NHẬP SỐ</label>
+                    <input type="text" id="probExtra" placeholder="VD: 23-53 hoặc 15-58-69" />
+                </div>
+
+                <button class="btn btn-orange" id="btnAnalyze">🎲 PHÂN TÍCH</button>
+            </div>
+
+            <div class="status" id="probStatus"></div>
+            <div id="probResult"></div>
+        </div>
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 2.1
+            &nbsp;|&nbsp; VERSION 3.0
         </div>
     </div>
 
     <script>
         // ===== ĐÀI CHÍNH MIỀN NAM THEO THỨ =====
-        // JS: 0=Chủ Nhật, 1=Thứ 2, ..., 6=Thứ 7
         const MAIN_STATIONS_MN = {
             1: "Đồng Tháp",     // Thứ 2
             2: "Vũng Tàu",      // Thứ 3
@@ -439,6 +611,7 @@
             0: "Đà Lạt",        // Chủ Nhật
         };
 
+        // ===== BIẾN TOÀN CỤC =====
         const dateInput = document.getElementById('dateInput');
         const btnSearch = document.getElementById('btnSearch');
         const statusBox = document.getElementById('status');
@@ -446,6 +619,26 @@
         const statsBox = document.getElementById('stats');
         const calendarSection = document.getElementById('calendarSection');
         const calendarBox = document.getElementById('calendar');
+
+        const probStatus = document.getElementById('probStatus');
+        const probResult = document.getElementById('probResult');
+        const probType = document.getElementById('probType');
+        const probRegion = document.getElementById('probRegion');
+        const probDays = document.getElementById('probDays');
+        const probExtra = document.getElementById('probExtra');
+        const probExtraGroup = document.getElementById('probExtraGroup');
+        const btnAnalyze = document.getElementById('btnAnalyze');
+
+        let availableDates = new Set();
+        let currentIsoDate = "";
+
+        // ===== TAB SWITCH =====
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
 
         // ===== NGÀY MẶC ĐỊNH THEO GIỜ VN =====
         function getDefaultDateVN() {
@@ -476,15 +669,19 @@
         const todayIso = getDefaultDateVN();
         const realTodayVN = getRealTodayVN();
         dateInput.value = todayIso;
+        currentIsoDate = todayIso;
 
-        let availableDates = new Set();
-        let currentIsoDate = todayIso;
-
+        // ===== STATUS =====
         function showStatus(type, msg) {
             statusBox.className = 'status ' + type;
             statusBox.textContent = msg;
         }
+        function showProbStatus(type, msg) {
+            probStatus.className = 'status ' + type;
+            probStatus.textContent = msg;
+        }
 
+        // ===== LOAD INDEX =====
         async function loadIndex() {
             try {
                 const res = await fetch(`data/index.json?_=${Date.now()}`);
@@ -498,16 +695,12 @@
                 calendarSection.style.display = 'block';
             } catch (err) {
                 console.warn('Load index failed:', err.message);
-                statsBox.style.display = 'none';
-                calendarSection.style.display = 'none';
             }
         }
 
+        // ===== RENDER LỊCH =====
         function renderCalendar() {
-            if (availableDates.size === 0) {
-                calendarBox.innerHTML = '<p style="color:#00aa2c;">>> NO_DATA_FOUND</p>';
-                return;
-            }
+            if (availableDates.size === 0) return;
             const sortedDates = Array.from(availableDates).sort().reverse();
             const months = {};
             sortedDates.forEach(iso => {
@@ -562,6 +755,7 @@
             resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
+        // ===== RENDER KẾT QUẢ =====
         function renderResult(data) {
             if (!data.regions || data.regions.length === 0) {
                 resultBox.innerHTML = '';
@@ -569,10 +763,9 @@
                 return;
             }
 
-            // ===== Xác định đài chính miền Nam theo ngày =====
             const [y, m, d] = currentIsoDate.split('-');
             const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-            const weekday = dateObj.getDay();  // 0=CN, 1=T2, ..., 6=T7
+            const weekday = dateObj.getDay();
             const mainStationName = MAIN_STATIONS_MN[weekday] || "";
 
             let html = '';
@@ -581,7 +774,6 @@
                 html += `<div class="region-header">${r.name}</div>`;
                 html += `<div class="station-grid">`;
                 r.stations.forEach((st) => {
-                    // Đài chính: miền Nam + tên khớp
                     const isMain = (r.key === 'nam' && st.name.trim() === mainStationName);
                     const cardClass = isMain ? 'station-card main-station' : 'station-card';
 
@@ -624,6 +816,374 @@
             }
         }
 
+        // ===== HIỆN Ô NHẬP SỐ KHI CHỌN CẶP/BỘ 3 =====
+        probType.addEventListener('change', () => {
+            const t = probType.value;
+            if (t === 'cap' || t === 'bo3') {
+                probExtraGroup.style.display = 'flex';
+                probExtra.placeholder = t === 'cap'
+                    ? 'VD: 23-53, 15-58'
+                    : 'VD: 15-58-69, 23-53-96';
+            } else {
+                probExtraGroup.style.display = 'none';
+            }
+        });
+
+        // ===== TẢI DỮ LIỆU NHIỀU NGÀY =====
+        async function loadDaysData(days, regionFilter) {
+            const sortedDates = Array.from(availableDates).sort().reverse();
+            const datesToLoad = sortedDates.slice(0, days);
+
+            const allData = [];
+            let loaded = 0;
+
+            for (const iso of datesToLoad) {
+                const year = iso.slice(0, 4);
+                try {
+                    const res = await fetch(`data/${year}/${iso}.json?_=${Date.now()}`);
+                    if (!res.ok) continue;
+                    const dayData = await res.json();
+                    allData.push({
+                        date: iso,
+                        regions: dayData.regions || []
+                    });
+                    loaded++;
+                    if (loaded % 10 === 0) {
+                        showProbStatus('loading', `ĐANG TẢI... ${loaded}/${datesToLoad.length}`);
+                    }
+                } catch (e) {
+                    console.warn('Skip', iso, e.message);
+                }
+            }
+            return allData;
+        }
+
+        // ===== PHÂN TÍCH XÁC SUẤT 2/3 SỐ ĐUÔI =====
+        function analyzeTails(allData, regionKey, tailLen) {
+            const counter = {};
+            let totalNumbers = 0;
+
+            allData.forEach(day => {
+                day.regions.forEach(r => {
+                    if (r.key !== regionKey) return;
+                    r.stations.forEach(st => {
+                        st.prizes.forEach(p => {
+                            p.numbers.forEach(num => {
+                                if (num.length < tailLen) return;
+                                const tail = num.slice(-tailLen);
+                                counter[tail] = (counter[tail] || 0) + 1;
+                                totalNumbers++;
+                            });
+                        });
+                    });
+                });
+            });
+
+            return { counter, totalNumbers };
+        }
+
+        // ===== PHÂN TÍCH CẶP / BỘ 3 SỐ =====
+        function analyzeCombos(allData, combos) {
+            const result = {};
+            combos.forEach(combo => {
+                result[combo.join("-")] = { days: [], combo };
+            });
+
+            allData.forEach(day => {
+                const allTails = new Set();
+                day.regions.forEach(r => {
+                    if (r.key !== 'bac') return;
+                    r.stations.forEach(st => {
+                        st.prizes.forEach(p => {
+                            p.numbers.forEach(num => {
+                                allTails.add(num.slice(-2));
+                            });
+                        });
+                    });
+                });
+
+                combos.forEach(combo => {
+                    if (combo.every(n => allTails.has(n))) {
+                        result[combo.join("-")].days.push(day.date);
+                    }
+                });
+            });
+
+            return result;
+        }
+
+        // ===== RENDER KẾT QUẢ XÁC SUẤT =====
+        function renderTailResult(counter, totalNumbers, tailLen, regionName, daysCount) {
+            const sorted = Object.entries(counter).sort((a, b) => b[1] - a[1]);
+            const top = sorted.slice(0, 30);
+            const maxCount = top[0] ? top[0][1] : 1;
+
+            let html = '';
+
+            html += `<div class="prob-summary">
+                <div class="box">
+                    <div class="val">${totalNumbers.toLocaleString()}</div>
+                    <div class="lbl">Tổng số lần</div>
+                </div>
+                <div class="box">
+                    <div class="val">${Object.keys(counter).length}</div>
+                    <div class="lbl">Số khác nhau</div>
+                </div>
+                <div class="box">
+                    <div class="val">${daysCount}</div>
+                    <div class="lbl">Ngày phân tích</div>
+                </div>
+            </div>`;
+
+            html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
+                📊 TOP 30 SỐ ${tailLen} ĐUÔI XUẤT HIỆN NHIỀU NHẤT — ${regionName.toUpperCase()}
+            </h3>`;
+
+            html += `<table class="prob-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Số</th>
+                        <th>Số lần</th>
+                        <th>Xác suất</th>
+                        <th>Biểu đồ</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            top.forEach((item, i) => {
+                const [num, count] = item;
+                const pct = (count / totalNumbers * 100).toFixed(2);
+                const barWidth = Math.round(count / maxCount * 100);
+
+                html += `<tr>
+                    <td class="rank">${i + 1}</td>
+                    <td class="num-highlight">${num}</td>
+                    <td>${count}</td>
+                    <td class="percent">${pct}%</td>
+                    <td style="text-align:left; padding-left:15px;">
+                        <span class="bar" style="width:${barWidth}%;"></span>
+                    </td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+
+            // Nút tải CSV
+            html += `<div style="text-align:center; margin-top:20px;">
+                <button class="btn btn-orange" onclick='downloadCSV(${JSON.stringify(sorted).replace(/'/g, "&#39;")}, "xacsuat_${tailLen}so_${regionName}")'>
+                    📥 TẢI CSV
+                </button>
+            </div>`;
+
+            return html;
+        }
+
+        function renderComboResult(result, combos, daysCount) {
+            let html = '';
+
+            html += `<div class="prob-summary">
+                <div class="box">
+                    <div class="val">${combos.length}</div>
+                    <div class="lbl">Số bộ</div>
+                </div>
+                <div class="box">
+                    <div class="val">${daysCount}</div>
+                    <div class="lbl">Ngày phân tích</div>
+                </div>
+            </div>`;
+
+            const size = combos[0].length;
+            const title = size === 2 ? '🎲 XÁC SUẤT CẶP SỐ' : '🎲 XÁC SUẤT BỘ 3 SỐ';
+
+            html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
+                ${title} — MIỀN BẮC
+            </h3>`;
+
+            html += `<table class="prob-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Bộ số</th>
+                        <th>Số ngày cùng về</th>
+                        <th>Xác suất</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            combos.forEach((combo, i) => {
+                const key = combo.join("-");
+                const info = result[key];
+                const hits = info.days.length;
+                const pct = (hits / daysCount * 100).toFixed(2);
+
+                html += `<tr>
+                    <td class="rank">${i + 1}</td>
+                    <td class="num-highlight">${key}</td>
+                    <td>${hits} / ${daysCount}</td>
+                    <td class="percent">${pct}%</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+
+            // Chi tiết ngày
+            html += `<h4 style="color:var(--cyan); margin-top:25px; margin-bottom:10px;">
+                📅 CHI TIẾT CÁC NGÀY CÙNG VỀ
+            </h4>`;
+
+            combos.forEach(combo => {
+                const key = combo.join("-");
+                const info = result[key];
+                html += `<div style="margin-bottom:15px; padding:10px; border:1px dashed var(--green-dim); border-radius:3px;">
+                    <div style="color:var(--yellow); font-weight:700; margin-bottom:6px;">
+                        Bộ <span style="color:#fff;">${key}</span> → ${info.days.length} ngày
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--green); line-height:1.8;">
+                        ${info.days.length > 0
+                            ? info.days.map(d => d.split('-').reverse().join('/')).join(' &nbsp;|&nbsp; ')
+                            : '<em style="color:#666;">Không có ngày nào</em>'}
+                    </div>
+                </div>`;
+            });
+
+            return html;
+        }
+
+        // ===== TẢI CSV =====
+        function downloadCSV(data, filename) {
+            let csv = "\uFEFF"; // BOM for Excel
+            csv += "STT,Số,Số lần\n";
+            data.forEach((item, i) => {
+                csv += `${i + 1},${item[0]},${item[1]}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename + '.csv';
+            link.click();
+        }
+
+        // ===== XỬ LÝ PHÂN TÍCH =====
+        btnAnalyze.addEventListener('click', async () => {
+            const type = probType.value;
+            const region = probRegion.value;
+            const days = parseInt(probDays.value);
+
+            if (availableDates.size === 0) {
+                showProbStatus('error', 'CHƯA CÓ DỮ LIỆU. VUI LÒNG ĐỢI ACTIONS CHẠY XONG.');
+                return;
+            }
+
+            btnAnalyze.disabled = true;
+            probResult.innerHTML = '';
+
+            try {
+                // Cặp / Bộ 3
+                if (type === 'cap' || type === 'bo3') {
+                    if (region !== 'bac') {
+                        showProbStatus('error', 'CHỈ HỖ TRỢ MIỀN BẮC CHO CẶP/BỘ 3 SỐ');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    const raw = probExtra.value.trim();
+                    if (!raw) {
+                        showProbStatus('error', 'VUI LÒNG NHẬP SỐ');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    const size = type === 'cap' ? 2 : 3;
+                    const combos = [];
+                    const invalid = [];
+
+                    for (const chunk of raw.split(',')) {
+                        const parts = chunk.trim().split('-').map(p => p.trim()).filter(Boolean);
+                        if (parts.length !== size) {
+                            invalid.push(chunk);
+                            continue;
+                        }
+                        if (!parts.every(p => /^\d{2}$/.test(p))) {
+                            invalid.push(chunk);
+                            continue;
+                        }
+                        if (new Set(parts).size !== size) {
+                            invalid.push(chunk + ' (trùng)');
+                            continue;
+                        }
+                        combos.push(parts);
+                    }
+
+                    if (invalid.length > 0) {
+                        showProbStatus('error', 'SAI ĐỊNH DẠNG: ' + invalid.join(', '));
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    if (combos.length === 0) {
+                        showProbStatus('error', 'KHÔNG CÓ BỘ NÀO HỢP LỆ');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    showProbStatus('loading', `ĐANG TẢI ${days} NGÀY...`);
+                    const allData = await loadDaysData(days, 'bac');
+
+                    if (allData.length === 0) {
+                        showProbStatus('error', 'KHÔNG TẢI ĐƯỢC DỮ LIỆU');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    showProbStatus('loading', 'ĐANG TÍNH TOÁN...');
+                    await new Promise(r => setTimeout(r, 50));
+
+                    const result = analyzeCombos(allData, combos);
+                    probResult.innerHTML = renderComboResult(result, combos, allData.length);
+                    showProbStatus('success', `HOÀN TẤT :: ${allData.length} NGÀY`);
+                    btnAnalyze.disabled = false;
+                    return;
+                }
+
+                // 2 số / 3 số
+                const tailLen = type === '2so' ? 2 : 3;
+                showProbStatus('loading', `ĐANG TẢI ${days} NGÀY...`);
+                const allData = await loadDaysData(days, region);
+
+                if (allData.length === 0) {
+                    showProbStatus('error', 'KHÔNG TẢI ĐƯỢC DỮ LIỆU');
+                    btnAnalyze.disabled = false;
+                    return;
+                }
+
+                showProbStatus('loading', 'ĐANG TÍNH TOÁN...');
+                await new Promise(r => setTimeout(r, 50));
+
+                const { counter, totalNumbers } = analyzeTails(allData, region, tailLen);
+
+                if (totalNumbers === 0) {
+                    showProbStatus('error', 'KHÔNG CÓ SỐ NÀO');
+                    btnAnalyze.disabled = false;
+                    return;
+                }
+
+                const regionNames = { nam: 'Miền Nam', trung: 'Miền Trung', bac: 'Miền Bắc' };
+                probResult.innerHTML = renderTailResult(
+                    counter, totalNumbers, tailLen,
+                    regionNames[region], allData.length
+                );
+                showProbStatus('success', `HOÀN TẤT :: ${allData.length} NGÀY, ${totalNumbers.toLocaleString()} SỐ`);
+                btnAnalyze.disabled = false;
+
+            } catch (err) {
+                console.error(err);
+                showProbStatus('error', 'LỖI: ' + err.message);
+                btnAnalyze.disabled = false;
+            }
+        });
+
+        // ===== SỰ KIỆN =====
         btnSearch.addEventListener('click', () => {
             if (!dateInput.value) {
                 showStatus('error', 'PLEASE_SELECT_DATE');
@@ -632,6 +1192,7 @@
             loadResult(dateInput.value);
         });
 
+        // ===== KHỞI ĐỘNG =====
         (async () => {
             await loadIndex();
             loadResult(dateInput.value);

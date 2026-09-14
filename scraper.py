@@ -27,7 +27,7 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 8
+DAYS_TO_SCRAPE = 623
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============

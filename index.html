@@ -146,6 +146,7 @@
         .date-form input[type="date"],
         .prob-form input[type="number"],
         .prob-form input[type="text"],
+        .prob-form input[type="date"],
         .prob-form select {
             padding: 8px 12px; font-size: 0.9rem; font-family: inherit;
             border: 1px solid var(--green); border-radius: 3px;
@@ -159,6 +160,27 @@
         .date-form input:focus, .prob-form input:focus, .prob-form select:focus {
             box-shadow: 0 0 12px var(--green);
         }
+
+        /* ===== RADIO GROUP ===== */
+        .range-mode-group {
+            display: flex;
+            gap: 16px;
+            padding: 8px 14px;
+            border: 1px dashed var(--green-dim);
+            border-radius: 3px;
+            background: rgba(0, 255, 65, 0.02);
+        }
+        .range-mode-group label {
+            font-weight: 600; color: var(--green-dim);
+            cursor: pointer; display: flex; align-items: center; gap: 5px;
+            text-shadow: none;
+        }
+        .range-mode-group label::before { content: ''; }
+        .range-mode-group input[type="radio"] {
+            accent-color: var(--green);
+            cursor: pointer;
+        }
+        .range-mode-group label.active { color: var(--green); text-shadow: 0 0 6px var(--green); }
 
         .btn {
             padding: 9px 22px; font-size: 0.9rem; font-weight: 700; font-family: inherit;
@@ -186,7 +208,6 @@
             box-shadow: 0 0 20px var(--orange);
         }
 
-        /* ===== STATS - CHUYỂN XUỐNG CUỐI ===== */
         .stats {
             display: flex; justify-content: center; gap: 15px;
             flex-wrap: wrap;
@@ -227,7 +248,6 @@
             color: var(--green); border: 1px solid var(--green); text-shadow: 0 0 6px var(--green);
         }
 
-        /* ===== LỊCH ===== */
         .calendar-section { margin-bottom: 25px; }
         .calendar-title {
             font-size: 1rem; font-weight: 700; color: var(--green);
@@ -310,7 +330,6 @@
             color: var(--red);
         }
 
-        /* ===== KẾT QUẢ ===== */
         .region { margin-bottom: 28px; }
         .region-header {
             font-size: 1.05rem; font-weight: 700;
@@ -416,7 +435,6 @@
             text-shadow: 0 0 6px var(--yellow);
         }
 
-        /* ===== BẢNG XÁC SUẤT ===== */
         .prob-table {
             width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 15px;
         }
@@ -553,7 +571,6 @@
 
             <div id="result"></div>
 
-            <!-- STATS CHUYỂN XUỐNG CUỐI -->
             <div class="stats" id="stats" style="display:none;">
                 <div class="stat-box">
                     <div class="num" id="statTotal">0</div>
@@ -588,7 +605,23 @@
                 <select id="probStation">
                     <option value="all">Tất cả đài</option>
                 </select>
+            </div>
 
+            <div class="prob-form">
+                <label>CHẾ ĐỘ</label>
+                <div class="range-mode-group">
+                    <label class="active" id="modeRecentLbl">
+                        <input type="radio" name="rangeMode" value="recent" checked onchange="switchRangeMode()" />
+                        Số ngày gần nhất
+                    </label>
+                    <label id="modeRangeLbl">
+                        <input type="radio" name="rangeMode" value="range" onchange="switchRangeMode()" />
+                        Khoảng ngày cụ thể
+                    </label>
+                </div>
+            </div>
+
+            <div class="prob-form" id="probRecentGroup">
                 <label>SỐ NGÀY</label>
                 <select id="probDays">
                     <option value="7">7 ngày</option>
@@ -603,12 +636,20 @@
                     <option value="365">365 ngày</option>
                     <option value="512">512 ngày</option>
                 </select>
+            </div>
 
+            <div class="prob-form" id="probRangeGroup" style="display:none;">
+                <label>TỪ NGÀY</label>
+                <input type="date" id="probFromDate" />
+                <label>ĐẾN NGÀY</label>
+                <input type="date" id="probToDate" />
+            </div>
+
+            <div class="prob-form">
                 <div id="probExtraGroup" style="display:none;">
                     <label>NHẬP SỐ</label>
                     <input type="text" id="probExtra" placeholder="VD: 23-53 hoặc 15-58-69" />
                 </div>
-
                 <button class="btn btn-orange" id="btnAnalyze">🎲 PHÂN TÍCH</button>
             </div>
 
@@ -618,18 +659,16 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 3.3
+            &nbsp;|&nbsp; VERSION 3.4
         </div>
     </div>
 
     <script>
-        // ===== ĐÀI CHÍNH MIỀN NAM THEO THỨ =====
         const MAIN_STATIONS_MN = {
             1: "Đồng Tháp", 2: "Vũng Tàu", 3: "Sóc Trăng",
             4: "Bình Thuận", 5: "Bình Dương", 6: "Bình Phước", 0: "Đà Lạt",
         };
 
-        // ===== DANH SÁCH ĐÀI THEO MIỀN =====
         const STATIONS_BY_REGION = {
             nam: [
                 "TP. HCM", "Đồng Tháp", "Cà Mau",
@@ -653,7 +692,6 @@
             ]
         };
 
-        // ===== BIẾN TOÀN CỤC =====
         const dateInput = document.getElementById('dateInput');
         const btnSearch = document.getElementById('btnSearch');
         const statusBox = document.getElementById('status');
@@ -672,10 +710,41 @@
         const probExtraGroup = document.getElementById('probExtraGroup');
         const btnAnalyze = document.getElementById('btnAnalyze');
 
+        const probFromDate = document.getElementById('probFromDate');
+        const probToDate = document.getElementById('probToDate');
+        const probRecentGroup = document.getElementById('probRecentGroup');
+        const probRangeGroup = document.getElementById('probRangeGroup');
+
         let availableDates = new Set();
         let currentIsoDate = "";
 
-        // ===== TOGGLE LỊCH =====
+        // ===== SWITCH RANGE MODE =====
+        function switchRangeMode() {
+            const mode = document.querySelector('input[name="rangeMode"]:checked').value;
+            const recentLbl = document.getElementById('modeRecentLbl');
+            const rangeLbl = document.getElementById('modeRangeLbl');
+
+            if (mode === 'recent') {
+                probRecentGroup.style.display = 'flex';
+                probRangeGroup.style.display = 'none';
+                recentLbl.classList.add('active');
+                rangeLbl.classList.remove('active');
+            } else {
+                probRecentGroup.style.display = 'none';
+                probRangeGroup.style.display = 'flex';
+                recentLbl.classList.remove('active');
+                rangeLbl.classList.add('active');
+                // Set mặc định: from = 30 ngày trước, to = hôm qua
+                if (!probFromDate.value || !probToDate.value) {
+                    const sortedDates = Array.from(availableDates).sort().reverse();
+                    if (sortedDates.length > 0) {
+                        probToDate.value = sortedDates[0];
+                        probFromDate.value = sortedDates[Math.min(29, sortedDates.length - 1)];
+                    }
+                }
+            }
+        }
+
         function toggleCalendar() {
             const wrap = document.getElementById('calendarWrap');
             const toggle = document.getElementById('calToggle');
@@ -738,6 +807,13 @@
                 statsBox.style.display = 'flex';
                 renderCalendar();
                 calendarSection.style.display = 'block';
+
+                // Set default date range inputs
+                const sortedDates = Array.from(availableDates).sort().reverse();
+                if (sortedDates.length > 0) {
+                    probToDate.value = sortedDates[0];
+                    probFromDate.value = sortedDates[Math.min(29, sortedDates.length - 1)];
+                }
             } catch (err) { console.warn(err); }
         }
 
@@ -825,7 +901,6 @@
             }
         }
 
-        // ===== DROPDOWN ĐÀI =====
         function updateStationDropdown() {
             const region = probRegion.value;
             const stations = STATIONS_BY_REGION[region] || [];
@@ -851,9 +926,26 @@
             }
         });
 
-        async function loadDaysData(days) {
-            const sortedDates = Array.from(availableDates).sort().reverse();
-            const datesToLoad = sortedDates.slice(0, days);
+        // ===== LẤY DANH SÁCH NGÀY ĐỂ TẢI =====
+        function getDatesToLoad() {
+            const mode = document.querySelector('input[name="rangeMode"]:checked').value;
+            const allSorted = Array.from(availableDates).sort().reverse();
+
+            if (mode === 'recent') {
+                const days = parseInt(probDays.value);
+                return allSorted.slice(0, days);
+            } else {
+                const from = probFromDate.value;
+                const to = probToDate.value;
+                if (!from || !to) return [];
+                return allSorted.filter(iso => iso >= from && iso <= to);
+            }
+        }
+
+        async function loadDaysData() {
+            const datesToLoad = getDatesToLoad();
+            if (datesToLoad.length === 0) return [];
+
             const allData = [];
             let loaded = 0;
 
@@ -923,7 +1015,7 @@
             return result;
         }
 
-        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount) {
+        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate) {
             const sorted = Object.entries(counter).sort((a, b) => b[1] - a[1]);
             const top = sorted.slice(0, 30);
             const maxCount = top[0] ? top[0][1] : 1;
@@ -932,6 +1024,10 @@
                 <div class="box"><div class="val">${totalNumbers.toLocaleString()}</div><div class="lbl">Tổng số lần</div></div>
                 <div class="box"><div class="val">${Object.keys(counter).length}</div><div class="lbl">Số khác nhau</div></div>
                 <div class="box"><div class="val">${daysCount}</div><div class="lbl">Ngày phân tích</div></div>
+            </div>`;
+
+            html += `<div style="text-align:center; color:var(--cyan); margin:10px 0; font-size:0.85rem;">
+                📅 TỪ ${firstDate.split('-').reverse().join('/')} ĐẾN ${lastDate.split('-').reverse().join('/')}
             </div>`;
 
             html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">📊 TOP 30 SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}</h3>`;
@@ -996,12 +1092,24 @@
         btnAnalyze.addEventListener('click', async () => {
             const type = probType.value;
             const region = probRegion.value;
-            const days = parseInt(probDays.value);
             const stationFilter = probStation.value;
+            const mode = document.querySelector('input[name="rangeMode"]:checked').value;
 
             if (availableDates.size === 0) {
                 showProbStatus('error', 'CHƯA CÓ DỮ LIỆU');
                 return;
+            }
+
+            // Validate
+            if (mode === 'range') {
+                if (!probFromDate.value || !probToDate.value) {
+                    showProbStatus('error', 'VUI LÒNG CHỌN KHOẢNG NGÀY');
+                    return;
+                }
+                if (probFromDate.value > probToDate.value) {
+                    showProbStatus('error', 'NGÀY BẮT ĐẦU PHẢI <= NGÀY KẾT THÚC');
+                    return;
+                }
             }
 
             btnAnalyze.disabled = true;
@@ -1046,8 +1154,8 @@
                         return;
                     }
 
-                    showProbStatus('loading', `ĐANG TẢI ${days} NGÀY...`);
-                    const allData = await loadDaysData(days);
+                    showProbStatus('loading', 'ĐANG TẢI DỮ LIỆU...');
+                    const allData = await loadDaysData();
                     if (allData.length === 0) {
                         showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU');
                         btnAnalyze.disabled = false;
@@ -1065,8 +1173,8 @@
                 }
 
                 const tailLen = type === '2so' ? 2 : 3;
-                showProbStatus('loading', `ĐANG TẢI ${days} NGÀY...`);
-                const allData = await loadDaysData(days);
+                showProbStatus('loading', 'ĐANG TẢI DỮ LIỆU...');
+                const allData = await loadDaysData();
                 if (allData.length === 0) {
                     showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU');
                     btnAnalyze.disabled = false;
@@ -1088,7 +1196,10 @@
                     ? `${stationFilter} (${regionNames[region]})`
                     : regionNames[region];
 
-                probResult.innerHTML = renderTailResult(counter, totalNumbers, tailLen, regionLabel, allData.length);
+                const firstDate = allData[allData.length - 1].date;
+                const lastDate = allData[0].date;
+
+                probResult.innerHTML = renderTailResult(counter, totalNumbers, tailLen, regionLabel, allData.length, firstDate, lastDate);
                 showProbStatus('success', `HOÀN TẤT :: ${allData.length} NGÀY, ${totalNumbers.toLocaleString()} SỐ`);
                 btnAnalyze.disabled = false;
 

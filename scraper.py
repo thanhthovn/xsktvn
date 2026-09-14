@@ -4,8 +4,8 @@ scraper.py - Cào KQXS từ minhngoc.net
 Repo: xsktvn
 
 - Chỉ cào từ HÔM QUA lùi về 365 ngày (bỏ qua hôm nay).
-- Chỉ lấy đài có trong lịch xổ số của ngày đó (theo thứ).
-- Chỉ lấy kết quả của NGÀY CHÍNH (bỏ qua ngày cũ hơn).
+- Chỉ lấy box có NGÀY TRONG BOX khớp với ngày cần cào.
+- Lọc đài theo lịch xổ số của thứ trong tuần.
 """
 import os
 import json
@@ -26,11 +26,10 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 15
+DAYS_TO_SCRAPE = 7
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============
-# Python: 0=Thứ Hai, ..., 6=Chủ Nhật
 
 STATIONS_BY_WEEKDAY_MN = {
     0: ["TP. HCM", "Đồng Tháp", "Cà Mau"],
@@ -97,68 +96,53 @@ def extract_numbers(td):
 
 
 def normalize_name(name):
-    """Bỏ dấu, lowercase, chuẩn hóa để so sánh tên đài."""
     name = name.lower().strip()
     name = uni_normalize("NFD", name)
-    name = "".join(c for c in name if uni_normalize("NFC", c) == c)
+    name = "".join(c for c in name if uni_normalize("NFC", c) != c or c in "đĐ")
     name = name.replace("đ", "d")
     name = re.sub(r"\s+", " ", name)
     return name
 
 
-# ============ PARSE TỪNG MIỀN ============
+def extract_station_prizes(rt):
+    tinh_td = rt.select_one("td.tinh")
+    if not tinh_td:
+        return None
+    name = tinh_td.get_text(strip=True)
+    if not name:
+        return None
 
-def parse_mien_nam_trung(table, allowed_stations):
-    stations = []
-    right_tables = table.select("table.rightcl")
+    matinh_td = rt.select_one("td.matinh")
+    code = matinh_td.get_text(strip=True) if matinh_td else ""
 
-    for rt in right_tables:
-        tinh_td = rt.select_one("td.tinh")
-        if not tinh_td:
+    prizes = []
+    prize_order = [
+        ("giai8", "Giải tám"),
+        ("giai7", "Giải bảy"),
+        ("giai6", "Giải sáu"),
+        ("giai5", "Giải năm"),
+        ("giai4", "Giải tư"),
+        ("giai3", "Giải ba"),
+        ("giai2", "Giải nhì"),
+        ("giai1", "Giải nhất"),
+        ("giaidb", "Giải ĐB"),
+    ]
+
+    for cls, label in prize_order:
+        td = rt.select_one(f"td.{cls}")
+        if not td:
             continue
-        name = tinh_td.get_text(strip=True)
-        if not name:
-            continue
+        nums = extract_numbers(td)
+        if nums:
+            prizes.append({"label": label, "numbers": nums})
 
-        if normalize_name(name) not in allowed_stations:
-            continue
+    if not prizes:
+        return None
 
-        matinh_td = rt.select_one("td.matinh")
-        code = matinh_td.get_text(strip=True) if matinh_td else ""
-
-        prizes = []
-        prize_order = [
-            ("giai8", "Giải tám"),
-            ("giai7", "Giải bảy"),
-            ("giai6", "Giải sáu"),
-            ("giai5", "Giải năm"),
-            ("giai4", "Giải tư"),
-            ("giai3", "Giải ba"),
-            ("giai2", "Giải nhì"),
-            ("giai1", "Giải nhất"),
-            ("giaidb", "Giải ĐB"),
-        ]
-
-        for cls, label in prize_order:
-            td = rt.select_one(f"td.{cls}")
-            if not td:
-                continue
-            nums = extract_numbers(td)
-            if nums:
-                prizes.append({"label": label, "numbers": nums})
-
-        if prizes:
-            stations.append({
-                "name": name,
-                "code": code,
-                "prizes": prizes,
-            })
-
-    return stations
+    return {"name": name, "code": code, "prizes": prizes}
 
 
-def parse_mien_bac(table, allowed_station):
-    stations = []
+def extract_mien_bac_prizes(table):
     name = "Miền Bắc"
     code = ""
 
@@ -186,23 +170,27 @@ def parse_mien_bac(table, allowed_station):
         if nums:
             prizes.append({"label": label, "numbers": nums})
 
-    if prizes:
-        stations.append({
-            "name": name,
-            "code": code,
-            "prizes": prizes,
-        })
+    if not prizes:
+        return None
 
-    return stations
+    return {"name": name, "code": code, "prizes": prizes}
 
 
 # ============ PARSE TRANG ============
 
 def parse_page(html, date_str):
+    """
+    Chỉ lấy box có NGÀY TRONG BOX khớp với date_str.
+    Ngày có thể nằm ở:
+      - .top .title a (link ngày)
+      - .ngay (Ngày: dd/mm/yyyy)
+    """
     soup = BeautifulSoup(html, "lxml")
-    regions = []
 
     d, m, y = date_str.split("-")
+    target_dmy_slash = f"{d}/{m}/{y}"
+    target_dmy_dash = f"{d}-{m}-{y}"
+
     dt = datetime(int(y), int(m), int(d))
     weekday = dt.weekday()
     weekday_name = WEEKDAY_NAMES[weekday]
@@ -216,79 +204,89 @@ def parse_page(html, date_str):
     print(f"   MT: {STATIONS_BY_WEEKDAY_MT.get(weekday, [])}")
     print(f"   MB: {allowed_mb}")
 
-    noidung = soup.select_one("#noidung")
-    if not noidung:
-        print("⚠ Không tìm thấy #noidung")
-        return {"regions": []}
+    stations_nam = []
+    stations_trung = []
+    station_bac = None
 
-    # Quét tuần tự, dừng khi gặp h1.pagetitle thứ hai
-    valid_boxes = []
-    h1_count = 0
-    first_h1_text = ""
+    all_boxes = soup.select("div.box_kqxs")
+    print(f"→ Tìm thấy {len(all_boxes)} box_kqxs trên trang")
 
-    for el in noidung.descendants:
-        if not hasattr(el, "name") or el.name is None:
+    matched = 0
+    for box in all_boxes:
+        box_date = None
+
+        # CÁCH 1: Tìm ngày trong tiêu đề box
+        title_div = box.select_one(".top .title")
+        if title_div:
+            for a in title_div.find_all("a"):
+                text = a.get_text(strip=True)
+                if text in (target_dmy_slash, target_dmy_dash):
+                    box_date = text
+                    break
+
+        # CÁCH 2: Tìm ngày trong .ngay (bảng)
+        if box_date is None:
+            ngay_span = box.select_one(".ngay")
+            if ngay_span:
+                text = ngay_span.get_text(strip=True)
+                if target_dmy_slash in text or target_dmy_dash in text:
+                    box_date = target_dmy_slash
+
+        if box_date is None:
             continue
 
-        if el.name == "h1" and "pagetitle" in (el.get("class") or []):
-            h1_count += 1
-            if h1_count == 1:
-                first_h1_text = el.get_text(strip=True)
-                print(f"→ Ngày chính trên trang: {first_h1_text}")
-            elif h1_count == 2:
-                print(f"→ Gặp ngày thứ hai, dừng quét")
-                break
+        matched += 1
+        title_text = (title_div.get_text(strip=True).lower() if title_div else "")
 
-        if el.name == "div" and "box_kqxs" in (el.get("class") or []):
-            if h1_count == 1:
-                valid_boxes.append(el)
-
-    print(f"→ Lấy được {len(valid_boxes)} box của ngày chính")
-
-    for box in valid_boxes:
-        title_a = box.select_one(".top .title a")
-        if not title_a:
-            continue
-        title = title_a.get_text(strip=True).lower()
-
-        if "miền nam" in title or "mien nam" in title:
-            region_key = "nam"
-            region_name = "MIỀN NAM"
+        if "miền nam" in title_text or "mien nam" in title_text:
             table = box.select_one("table.bkqmiennam")
             if not table:
                 continue
             if "bkqmienbac" in table.get("class", []):
                 continue
-            stations = parse_mien_nam_trung(table, allowed_mn)
+            for rt in table.select("table.rightcl"):
+                info = extract_station_prizes(rt)
+                if not info:
+                    continue
+                norm = normalize_name(info["name"])
+                if norm in allowed_mn:
+                    stations_nam.append(info)
+                else:
+                    print(f"     ⏭ Bỏ đài không có trong lịch: {info['name']}")
 
-        elif "miền trung" in title or "mien trung" in title:
-            region_key = "trung"
-            region_name = "MIỀN TRUNG"
+        elif "miền trung" in title_text or "mien trung" in title_text:
             table = box.select_one("table.bkqmiennam")
             if not table:
                 continue
-            stations = parse_mien_nam_trung(table, allowed_mt)
+            for rt in table.select("table.rightcl"):
+                info = extract_station_prizes(rt)
+                if not info:
+                    continue
+                norm = normalize_name(info["name"])
+                if norm in allowed_mt:
+                    stations_trung.append(info)
+                else:
+                    print(f"     ⏭ Bỏ đài không có trong lịch: {info['name']}")
 
-        elif "miền bắc" in title or "mien bac" in title:
-            region_key = "bac"
-            region_name = "MIỀN BẮC"
+        elif "miền bắc" in title_text or "mien bac" in title_text:
             table = box.select_one("table.bkqtinhmienbac")
             if not table:
                 continue
-            stations = parse_mien_bac(table, allowed_mb)
+            info = extract_mien_bac_prizes(table)
+            if info:
+                station_bac = info
 
-        else:
-            continue
+    print(f"→ Khớp ngày: {matched}/{len(all_boxes)} box")
 
-        if stations:
-            regions.append({
-                "key": region_key,
-                "name": region_name,
-                "stations": stations,
-            })
+    regions = []
+    if stations_nam:
+        regions.append({"key": "nam", "name": "MIỀN NAM", "stations": stations_nam})
+    if stations_trung:
+        regions.append({"key": "trung", "name": "MIỀN TRUNG", "stations": stations_trung})
+    if station_bac:
+        regions.append({"key": "bac", "name": "MIỀN BẮC", "stations": [station_bac]})
 
-    order = {"nam": 0, "trung": 1, "bac": 2}
-    regions.sort(key=lambda r: order.get(r["key"], 99))
+    print(f"→ Kết quả: MN={len(stations_nam)} đài, MT={len(stations_trung)} đài, MB={'Có' if station_bac else 'Không'}")
 
     return {"regions": regions}
 

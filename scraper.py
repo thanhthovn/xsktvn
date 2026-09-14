@@ -6,6 +6,7 @@ Repo: xsktvn
 - Chỉ cào từ HÔM QUA lùi về 365 ngày (bỏ qua hôm nay).
 - Chỉ lấy box có NGÀY TRONG BOX khớp với ngày cần cào.
 - Lọc đài theo lịch xổ số của thứ trong tuần.
+- Miền Bắc: dùng tên đài từ lịch (vì HTML không có tên đài).
 """
 import os
 import json
@@ -26,7 +27,7 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 7
+DAYS_TO_SCRAPE = 8
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============
@@ -105,6 +106,7 @@ def normalize_name(name):
 
 
 def extract_station_prizes(rt):
+    """Trích xuất 1 đài miền Nam/Trung từ table.rightcl."""
     tinh_td = rt.select_one("td.tinh")
     if not tinh_td:
         return None
@@ -142,10 +144,15 @@ def extract_station_prizes(rt):
     return {"name": name, "code": code, "prizes": prizes}
 
 
-def extract_mien_bac_prizes(table):
-    name = "Miền Bắc"
+def extract_mien_bac_prizes(table, station_name):
+    """
+    Trích xuất giải miền Bắc.
+    station_name: tên đài từ lịch (Hà Nội / Quảng Ninh / ...).
+    """
+    name = station_name
     code = ""
 
+    # Ký hiệu trúng ĐB (dùng làm code)
     loaive = table.select_one(".loaive_content")
     if loaive:
         code = loaive.get_text(strip=True)
@@ -181,9 +188,6 @@ def extract_mien_bac_prizes(table):
 def parse_page(html, date_str):
     """
     Chỉ lấy box có NGÀY TRONG BOX khớp với date_str.
-    Ngày có thể nằm ở:
-      - .top .title a (link ngày)
-      - .ngay (Ngày: dd/mm/yyyy)
     """
     soup = BeautifulSoup(html, "lxml")
 
@@ -272,9 +276,11 @@ def parse_page(html, date_str):
             table = box.select_one("table.bkqtinhmienbac")
             if not table:
                 continue
-            info = extract_mien_bac_prizes(table)
+            # Truyền tên đài từ lịch vào
+            info = extract_mien_bac_prizes(table, allowed_mb)
             if info:
                 station_bac = info
+                print(f"     ✔ Miền Bắc: {allowed_mb}")
 
     print(f"→ Khớp ngày: {matched}/{len(all_boxes)} box")
 

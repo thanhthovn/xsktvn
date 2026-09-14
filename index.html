@@ -630,4 +630,25 @@
                 const res = await fetch(url);
                 if (!res.ok) throw new Error('NO_DATA_FOR_THIS_DATE');
                 const data = await res.json();
-                showStatus('success', `ACCESS_GRANT
+                showStatus('success', `ACCESS_GRANTED :: ${isoDate.split('-').reverse().join('/')}`);
+                renderResult(data);
+            } catch (err) {
+                showStatus('error', err.message);
+            }
+        }
+
+        btnSearch.addEventListener('click', () => {
+            if (!dateInput.value) {
+                showStatus('error', 'PLEASE_SELECT_DATE');
+                return;
+            }
+            loadResult(dateInput.value);
+        });
+
+        (async () => {
+            await loadIndex();
+            loadResult(dateInput.value);
+        })();
+    </script>
+</body>
+</html>

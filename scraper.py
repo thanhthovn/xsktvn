@@ -22,7 +22,7 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 365
+DAYS_TO_SCRAPE = 15
 
 
 def fetch_html(date_str):

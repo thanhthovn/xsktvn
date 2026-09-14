@@ -2,7 +2,8 @@
 """
 scraper.py - Cào KQXS từ minhngoc.net
 Repo: xsktvn
-Đã fix selector theo cấu trúc HTML thực tế
+Tự động cào từ hôm qua lùi về 365 ngày, bỏ qua file đã có.
+Tạo data/index.json chứa danh sách các ngày có dữ liệu.
 """
 import os
 import json
@@ -22,34 +23,43 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 15
+DAYS_TO_SCRAPE = 365
 
 
-def fetch_html(date_str):
-    """date_str: dd-mm-yyyy"""
+def fetch_html(date_str, max_retry=3):
+    """Tải HTML của 1 ngày, retry tối đa max_retry lần."""
     url = f"https://www.minhngoc.net/ket-qua-xo-so/{date_str}.html"
-    print(f"→ Đang tải: {url}")
-    r = requests.get(url, headers=HEADERS, timeout=20)
-    r.raise_for_status()
-    r.encoding = "utf-8"
-    return r.text
+    for attempt in range(max_retry):
+        try:
+            print(f"→ Đang tải: {url} (lần {attempt+1})")
+            r = requests.get(url, headers=HEADERS, timeout=20)
+            r.raise_for_status()
+            r.encoding = "utf-8"
+            return r.text
+        except Exception as e:
+            print(f"  ⚠ Lỗi lần {attempt+1}: {e}")
+            time.sleep(5)
+    raise Exception(f"Không tải được sau {max_retry} lần")
+
+
+def extract_numbers(td):
+    """Trích xuất các số từ 1 ô <td>."""
+    divs = td.find_all("div", recursive=False)
+    if not divs:
+        text = td.get_text(strip=True)
+        if not text:
+            return []
+        nums = re.split(r"\s+", text)
+        return [n for n in nums if n]
+    return [d.get_text(strip=True) for d in divs if d.get_text(strip=True)]
 
 
 def parse_mien_nam_trung(table):
-    """
-    Parse bảng miền Nam hoặc miền Trung.
-    Cấu trúc:
-      - Cột trái (td.leftcl): chứa tên giải
-      - Các cột phải: mỗi cột là 1 đài, có td.tinh (tên), td.matinh (mã), td.giai8..giaidb (số)
-    """
+    """Parse bảng miền Nam hoặc miền Trung."""
     stations = []
-
-    # Tìm tất cả các đài: td.tinh trong bảng
-    # Mỗi td.tinh là 1 đài, nhưng phải lấy từ các bảng con rightcl
     right_tables = table.select("table.rightcl")
 
     for rt in right_tables:
-        # Tên đài
         tinh_td = rt.select_one("td.tinh")
         if not tinh_td:
             continue
@@ -57,13 +67,10 @@ def parse_mien_nam_trung(table):
         if not name:
             continue
 
-        # Mã đài
         matinh_td = rt.select_one("td.matinh")
         code = matinh_td.get_text(strip=True) if matinh_td else ""
 
-        # Các giải
         prizes = []
-        # Thứ tự giải từ trên xuống: giai8, giai7, giai6, giai5, giai4, giai3, giai2, giai1, giaidb
         prize_order = [
             ("giai8", "Giải tám"),
             ("giai7", "Giải bảy"),
@@ -80,20 +87,9 @@ def parse_mien_nam_trung(table):
             td = rt.select_one(f"td.{cls}")
             if not td:
                 continue
-            # Lấy tất cả các div con (mỗi div là 1 số)
-            divs = td.find_all("div", recursive=False)
-            if not divs:
-                # fallback: lấy text trực tiếp
-                text = td.get_text(strip=True)
-                if text:
-                    nums = re.split(r"\s+", text)
-                    nums = [n for n in nums if n]
-                    if nums:
-                        prizes.append({"label": label, "numbers": nums})
-            else:
-                nums = [d.get_text(strip=True) for d in divs if d.get_text(strip=True)]
-                if nums:
-                    prizes.append({"label": label, "numbers": nums})
+            nums = extract_numbers(td)
+            if nums:
+                prizes.append({"label": label, "numbers": nums})
 
         if prizes:
             stations.append({
@@ -106,19 +102,11 @@ def parse_mien_nam_trung(table):
 
 
 def parse_mien_bac(table):
-    """
-    Parse bảng miền Bắc.
-    Cấu trúc:
-      - td.giaidbl / td.giai1l ... là nhãn giải
-      - td.giaidb / td.giai1 ... là số, chứa <div>
-    """
+    """Parse bảng miền Bắc."""
     stations = []
-
-    # Miền Bắc chỉ có 1 đài
     name = "Miền Bắc"
     code = ""
 
-    # Lấy mã đài từ ký hiệu (loaive_content)
     loaive = table.select_one(".loaive_content")
     if loaive:
         code = loaive.get_text(strip=True)
@@ -139,18 +127,9 @@ def parse_mien_bac(table):
         td = table.select_one(f"td.{cls}")
         if not td:
             continue
-        divs = td.find_all("div", recursive=False)
-        if not divs:
-            text = td.get_text(strip=True)
-            if text:
-                nums = re.split(r"\s+", text)
-                nums = [n for n in nums if n]
-                if nums:
-                    prizes.append({"label": label, "numbers": nums})
-        else:
-            nums = [d.get_text(strip=True) for d in divs if d.get_text(strip=True)]
-            if nums:
-                prizes.append({"label": label, "numbers": nums})
+        nums = extract_numbers(td)
+        if nums:
+            prizes.append({"label": label, "numbers": nums})
 
     if prizes:
         stations.append({
@@ -163,24 +142,13 @@ def parse_mien_bac(table):
 
 
 def parse_page(html):
-    """
-    Parse trang HTML, trả về dict:
-    {
-      "regions": [
-        {"key": "nam", "name": "MIỀN NAM", "stations": [...]},
-        {"key": "trung", "name": "MIỀN TRUNG", "stations": [...]},
-        {"key": "bac", "name": "MIỀN BẮC", "stations": [...]}
-      ]
-    }
-    """
+    """Parse toàn bộ trang, trả về dict regions."""
     soup = BeautifulSoup(html, "lxml")
     regions = []
 
-    # Tìm tất cả các div.box_kqxs
     boxes = soup.select("div.box_kqxs")
 
     for box in boxes:
-        # Lấy tiêu đề để xác định miền
         title_a = box.select_one(".top .title a")
         if not title_a:
             continue
@@ -192,7 +160,6 @@ def parse_page(html):
             table = box.select_one("table.bkqmiennam")
             if not table:
                 continue
-            # Bỏ qua bảng miền Bắc (cũng dùng class bkqmiennam bkqmienbac)
             if "bkqmienbac" in table.get("class", []):
                 continue
             stations = parse_mien_nam_trung(table)
@@ -223,7 +190,6 @@ def parse_page(html):
                 "stations": stations,
             })
 
-    # Sắp xếp theo thứ tự: Nam, Trung, Bắc
     order = {"nam": 0, "trung": 1, "bac": 2}
     regions.sort(key=lambda r: order.get(r["key"], 99))
 
@@ -231,7 +197,7 @@ def parse_page(html):
 
 
 def save_json(date_str, data):
-    """date_str: dd-mm-yyyy → data/yyyy/yyyy-mm-dd.json"""
+    """Lưu data/yyyy/yyyy-mm-dd.json"""
     d, m, y = date_str.split("-")
     iso = f"{y}-{m}-{d}"
     year_dir = os.path.join(OUTPUT_DIR, y)
@@ -244,6 +210,7 @@ def save_json(date_str, data):
 
 
 def scrape_date(date_str):
+    """Cào 1 ngày, lưu JSON."""
     html = fetch_html(date_str)
     data = parse_page(html)
     if not data.get("regions"):
@@ -251,6 +218,33 @@ def scrape_date(date_str):
         return None
     save_json(date_str, data)
     return data
+
+
+def build_index():
+    """Quét thư mục data/ và tạo file index.json."""
+    print("→ Đang tạo index.json...")
+    dates = []
+    if os.path.exists(OUTPUT_DIR):
+        for year_folder in sorted(os.listdir(OUTPUT_DIR)):
+            year_path = os.path.join(OUTPUT_DIR, year_folder)
+            if not os.path.isdir(year_path):
+                continue
+            for fname in os.listdir(year_path):
+                if fname.endswith(".json") and fname != "index.json":
+                    iso = fname.replace(".json", "")
+                    if re.match(r"^\d{4}-\d{2}-\d{2}$", iso):
+                        dates.append(iso)
+    dates.sort(reverse=True)
+    index_data = {
+        "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "total": len(dates),
+        "dates": dates,
+    }
+    index_path = os.path.join(OUTPUT_DIR, "index.json")
+    with open(index_path, "w", encoding="utf-8") as f:
+        json.dump(index_data, f, ensure_ascii=False, indent=2)
+    print(f"✔ Đã lưu index.json với {len(dates)} ngày")
+    return index_path
 
 
 def main():
@@ -271,6 +265,9 @@ def main():
         except Exception as e:
             print(f"✘ Lỗi ngày {date_str}: {e}")
             time.sleep(3)
+
+    # Tạo index.json sau khi cào xong
+    build_index()
 
 
 if __name__ == "__main__":

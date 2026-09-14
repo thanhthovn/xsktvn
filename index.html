@@ -25,11 +25,13 @@
             text-align: center; font-size: 1.05rem; color: #4a5568;
             margin-bottom: 22px;
         }
+
+        /* ===== FORM CHỌN NGÀY ===== */
         .date-form {
             display: flex; justify-content: center; align-items: center;
             gap: 12px; flex-wrap: wrap; padding: 18px;
             background: #f7fafc; border: 1px solid #e2e8f0;
-            border-radius: 10px; margin-bottom: 28px;
+            border-radius: 10px; margin-bottom: 20px;
         }
         .date-form label { font-weight: 600; color: #2d3748; }
         .date-form input[type="date"] {
@@ -43,6 +45,24 @@
         }
         .date-form button:hover { opacity: 0.9; }
 
+        /* ===== THỐNG KÊ ===== */
+        .stats {
+            display: flex; justify-content: center; gap: 20px;
+            flex-wrap: wrap; margin-bottom: 20px;
+        }
+        .stat-box {
+            background: #f0f4fa; border: 1px solid #d1d9e6;
+            border-radius: 10px; padding: 12px 20px;
+            text-align: center; min-width: 140px;
+        }
+        .stat-box .num {
+            font-size: 1.5rem; font-weight: 800; color: #0b2b4e;
+        }
+        .stat-box .label {
+            font-size: 0.82rem; color: #4a5568; margin-top: 4px;
+        }
+
+        /* ===== TRẠNG THÁI ===== */
         .status {
             text-align: center; padding: 14px; font-size: 1rem;
             border-radius: 8px; margin-bottom: 20px; display: none;
@@ -51,6 +71,70 @@
         .status.error   { display: block; background: #fff5f5; color: #c53030; }
         .status.success { display: block; background: #f0fff4; color: #276749; }
 
+        /* ===== LỊCH TRẠNG THÁI ===== */
+        .calendar-section {
+            margin-bottom: 30px;
+        }
+        .calendar-title {
+            font-size: 1.15rem; font-weight: 700; color: #0b2b4e;
+            margin-bottom: 12px; display: flex;
+            justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px;
+        }
+        .legend {
+            display: flex; gap: 16px; font-size: 0.85rem;
+            font-weight: 500; color: #4a5568;
+        }
+        .legend-item {
+            display: flex; align-items: center; gap: 5px;
+        }
+        .legend-dot {
+            width: 14px; height: 14px; border-radius: 3px;
+        }
+        .legend-dot.have { background: #38a169; }
+        .legend-dot.missing { background: #e2e8f0; border: 1px solid #cbd5e0; }
+
+        .month-grid {
+            margin-bottom: 20px;
+        }
+        .month-title {
+            font-weight: 700; color: #2d3748;
+            margin-bottom: 8px; font-size: 0.95rem;
+        }
+        .days-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+            gap: 4px;
+        }
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 5px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: 1px solid transparent;
+            user-select: none;
+        }
+        .day-cell.have {
+            background: #38a169; color: #fff;
+        }
+        .day-cell.have:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 10px rgba(56, 161, 105, 0.4);
+        }
+        .day-cell.missing {
+            background: #f1f5f9; color: #a0aec0;
+            cursor: not-allowed;
+            border-color: #e2e8f0;
+        }
+        .day-cell.today {
+            border: 2px solid #c53030;
+            font-weight: 800;
+        }
+
+        /* ===== KẾT QUẢ ===== */
         .region { margin-bottom: 35px; }
         .region-header {
             font-size: 1.3rem; font-weight: 700; color: #fff;
@@ -112,9 +196,12 @@
             .region-trung .station-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 650px) {
+            .container { padding: 15px; }
+            h1 { font-size: 1.4rem; }
             .region-nam .station-grid,
             .region-trung .station-grid { grid-template-columns: 1fr; }
             .station-card { border-right: none; border-bottom: 1px solid #e2e8f0; }
+            .days-row { grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); }
         }
     </style>
 </head>
@@ -130,6 +217,37 @@
         </div>
 
         <div class="status" id="status"></div>
+
+        <!-- THỐNG KÊ -->
+        <div class="stats" id="stats" style="display:none;">
+            <div class="stat-box">
+                <div class="num" id="statTotal">0</div>
+                <div class="label">Ngày có dữ liệu</div>
+            </div>
+            <div class="stat-box">
+                <div class="num" id="statUpdated">-</div>
+                <div class="label">Cập nhật lần cuối</div>
+            </div>
+        </div>
+
+        <!-- LỊCH TRẠNG THÁI -->
+        <div class="calendar-section" id="calendarSection" style="display:none;">
+            <div class="calendar-title">
+                <span>📆 Trạng thái dữ liệu theo tháng</span>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot have"></div>
+                        <span>Có dữ liệu</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot missing"></div>
+                        <span>Chưa có</span>
+                    </div>
+                </div>
+            </div>
+            <div id="calendar"></div>
+        </div>
+
         <div id="result"></div>
 
         <div class="footer">
@@ -142,15 +260,116 @@
         const btnSearch = document.getElementById('btnSearch');
         const statusBox = document.getElementById('status');
         const resultBox = document.getElementById('result');
+        const statsBox = document.getElementById('stats');
+        const calendarSection = document.getElementById('calendarSection');
+        const calendarBox = document.getElementById('calendar');
 
         const today = new Date();
         dateInput.value = today.toISOString().split('T')[0];
+
+        let availableDates = new Set();
 
         function showStatus(type, msg) {
             statusBox.className = 'status ' + type;
             statusBox.textContent = msg;
         }
 
+        // ===== LOAD INDEX.JSON =====
+        async function loadIndex() {
+            try {
+                const res = await fetch(`data/index.json?_=${Date.now()}`);
+                if (!res.ok) throw new Error('Chưa có index.json');
+                const data = await res.json();
+
+                availableDates = new Set(data.dates || []);
+                document.getElementById('statTotal').textContent = data.total || 0;
+                document.getElementById('statUpdated').textContent = data.updated || '-';
+                statsBox.style.display = 'flex';
+
+                renderCalendar();
+                calendarSection.style.display = 'block';
+            } catch (err) {
+                console.warn('Không load được index.json:', err.message);
+                statsBox.style.display = 'none';
+                calendarSection.style.display = 'none';
+            }
+        }
+
+        // ===== RENDER LỊCH =====
+        function renderCalendar() {
+            if (availableDates.size === 0) {
+                calendarBox.innerHTML = '<p style="color:#718096;">Chưa có dữ liệu.</p>';
+                return;
+            }
+
+            // Sắp xếp ngày giảm dần
+            const sortedDates = Array.from(availableDates).sort().reverse();
+
+            // Nhóm theo tháng
+            const months = {};
+            sortedDates.forEach(iso => {
+                const [y, m] = iso.split('-');
+                const key = `${y}-${m}`;
+                if (!months[key]) months[key] = [];
+                months[key].push(iso);
+            });
+
+            // Render từng tháng (mới nhất trước)
+            const monthKeys = Object.keys(months).sort().reverse();
+
+            let html = '';
+            monthKeys.forEach(key => {
+                const [y, m] = key.split('-');
+                const monthName = `Tháng ${parseInt(m)}/${y}`;
+                const days = months[key];
+
+                // Tạo map ngày → có/không
+                const dayMap = {};
+                days.forEach(iso => {
+                    const day = parseInt(iso.split('-')[2]);
+                    dayMap[day] = iso;
+                });
+
+                // Số ngày trong tháng
+                const daysInMonth = new Date(parseInt(y), parseInt(m), 0).getDate();
+
+                html += `<div class="month-grid">`;
+                html += `<div class="month-title">${monthName} <span style="color:#718096;font-weight:500;">(${days.length}/${daysInMonth} ngày)</span></div>`;
+                html += `<div class="days-row">`;
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const iso = `${y}-${m}-${String(day).padStart(2, '0')}`;
+                    const hasData = dayMap[day] !== undefined;
+                    const isToday = iso === today.toISOString().split('T')[0];
+
+                    const cls = [
+                        'day-cell',
+                        hasData ? 'have' : 'missing',
+                        isToday ? 'today' : '',
+                    ].filter(Boolean).join(' ');
+
+                    if (hasData) {
+                        html += `<div class="${cls}" onclick="selectDate('${iso}')" title="${iso} - Có dữ liệu">${day}</div>`;
+                    } else {
+                        html += `<div class="${cls}" title="${iso} - Chưa có dữ liệu">${day}</div>`;
+                    }
+                }
+
+                html += `</div></div>`;
+            });
+
+            calendarBox.innerHTML = html;
+        }
+
+        // ===== CHỌN NGÀY TỪ LỊCH =====
+        function selectDate(iso) {
+            dateInput.value = iso;
+            loadResult(iso);
+            // Cuộn lên đầu để xem kết quả
+            resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ===== RENDER KẾT QUẢ =====
         function renderResult(data) {
             if (!data.regions || data.regions.length === 0) {
                 resultBox.innerHTML = '';
@@ -185,6 +404,7 @@
             resultBox.innerHTML = html;
         }
 
+        // ===== LOAD KẾT QUẢ =====
         async function loadResult(isoDate) {
             showStatus('loading', '⏳ Đang tải...');
             resultBox.innerHTML = '';
@@ -209,7 +429,11 @@
             loadResult(dateInput.value);
         });
 
-        loadResult(dateInput.value);
+        // Khởi động
+        (async () => {
+            await loadIndex();
+            loadResult(dateInput.value);
+        })();
     </script>
 </body>
 </html>

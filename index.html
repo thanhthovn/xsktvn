@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XSKTVN - Tra cứu kết quả xổ số</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #eef1f5;
+            padding: 20px;
+            color: #1a202c;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 25px 30px 35px;
+        }
+        h1 { text-align: center; font-size: 1.9rem; color: #0b2b4e; margin-bottom: 6px; }
+        .sub-title {
+            text-align: center; font-size: 1.05rem; color: #4a5568;
+            margin-bottom: 22px;
+        }
+        .date-form {
+            display: flex; justify-content: center; align-items: center;
+            gap: 12px; flex-wrap: wrap; padding: 18px;
+            background: #f7fafc; border: 1px solid #e2e8f0;
+            border-radius: 10px; margin-bottom: 28px;
+        }
+        .date-form label { font-weight: 600; color: #2d3748; }
+        .date-form input[type="date"] {
+            padding: 9px 14px; font-size: 1rem;
+            border: 2px solid #cbd5e0; border-radius: 8px;
+        }
+        .date-form button {
+            padding: 10px 26px; font-size: 1rem; font-weight: 700;
+            color: #fff; background: linear-gradient(135deg, #1e3c72, #2a5298);
+            border: none; border-radius: 8px; cursor: pointer;
+        }
+        .date-form button:hover { opacity: 0.9; }
+
+        .status {
+            text-align: center; padding: 14px; font-size: 1rem;
+            border-radius: 8px; margin-bottom: 20px; display: none;
+        }
+        .status.loading { display: block; background: #ebf8ff; color: #2b6cb0; }
+        .status.error   { display: block; background: #fff5f5; color: #c53030; }
+        .status.success { display: block; background: #f0fff4; color: #276749; }
+
+        .region { margin-bottom: 35px; }
+        .region-header {
+            font-size: 1.3rem; font-weight: 700; color: #fff;
+            padding: 10px 20px; border-radius: 8px 8px 0 0;
+        }
+        .region-nam .region-header   { background: linear-gradient(135deg,#047857,#059669); }
+        .region-trung .region-header { background: linear-gradient(135deg,#1e3c72,#2a5298); }
+        .region-bac .region-header   { background: linear-gradient(135deg,#b91c1c,#dc2626); }
+
+        .station-grid {
+            display: grid; gap: 0;
+            border: 1px solid #d1d9e6; border-top: none;
+            border-radius: 0 0 8px 8px; overflow: hidden;
+        }
+        .region-nam .station-grid,
+        .region-trung .station-grid { grid-template-columns: repeat(3, 1fr); }
+        .region-bac .station-grid   { grid-template-columns: 1fr; }
+
+        .station-card { border-right: 1px solid #e2e8f0; background: #fff; }
+        .station-card:last-child { border-right: none; }
+
+        .station-header {
+            background: #f0f4fa; padding: 10px 14px;
+            border-bottom: 2px solid #d1d9e6;
+            display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 4px;
+        }
+        .station-name { font-weight: 700; font-size: 1.15rem; color: #0b2b4e; }
+        .station-code {
+            font-size: 0.75rem; color: #4a5568; background: #fff;
+            padding: 2px 10px; border-radius: 12px;
+            border: 1px solid #cbd5e0;
+        }
+
+        .prize-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+        .prize-table tr { border-bottom: 1px solid #edf2f7; }
+        .prize-table tr:last-child { border-bottom: none; }
+        .prize-label {
+            padding: 7px 8px 7px 14px; font-weight: 600; color: #2d3748;
+            width: 80px; vertical-align: top; font-size: 0.82rem;
+            background: #fafbfc;
+        }
+        .prize-numbers {
+            padding: 7px 10px; font-family: 'Courier New', monospace;
+            font-size: 0.95rem; font-weight: 600; color: #1a202c;
+            line-height: 1.7; word-spacing: 8px;
+        }
+        .special-prize { color: #c53030; font-size: 1.15rem; font-weight: 800; }
+
+        .footer {
+            text-align: center; margin-top: 35px;
+            font-size: 0.88rem; color: #718096;
+            border-top: 1px solid #e2e8f0; padding-top: 18px;
+        }
+        .footer a { color: #2a5298; text-decoration: none; }
+
+        @media (max-width: 992px) {
+            .region-nam .station-grid,
+            .region-trung .station-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 650px) {
+            .region-nam .station-grid,
+            .region-trung .station-grid { grid-template-columns: 1fr; }
+            .station-card { border-right: none; border-bottom: 1px solid #e2e8f0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎰 XSKTVN</h1>
+        <div class="sub-title">Tra cứu kết quả xổ số 3 miền</div>
+
+        <div class="date-form">
+            <label for="dateInput">📅 Chọn ngày:</label>
+            <input type="date" id="dateInput" />
+            <button id="btnSearch">Xem kết quả</button>
+        </div>
+
+        <div class="status" id="status"></div>
+        <div id="result"></div>
+
+        <div class="footer">
+            Nguồn: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
+        </div>
+    </div>
+
+    <script>
+        const dateInput = document.getElementById('dateInput');
+        const btnSearch = document.getElementById('btnSearch');
+        const statusBox = document.getElementById('status');
+        const resultBox = document.getElementById('result');
+
+        const today = new Date();
+        dateInput.value = today.toISOString().split('T')[0];
+
+        function showStatus(type, msg) {
+            statusBox.className = 'status ' + type;
+            statusBox.textContent = msg;
+        }
+
+        function renderResult(data) {
+            if (!data.regions || data.regions.length === 0) {
+                resultBox.innerHTML = '';
+                showStatus('error', 'Không có dữ liệu cho ngày này.');
+                return;
+            }
+            let html = '';
+            data.regions.forEach(r => {
+                html += `<div class="region region-${r.key}">`;
+                html += `<div class="region-header">📍 ${r.name}</div>`;
+                html += `<div class="station-grid">`;
+                r.stations.forEach(st => {
+                    html += `<div class="station-card">
+                        <div class="station-header">
+                            <span class="station-name">${st.name}</span>
+                            <span class="station-code">${st.code || ''}</span>
+                        </div>
+                        <table class="prize-table">`;
+                    st.prizes.forEach(p => {
+                        const cls = p.label === 'Giải ĐB'
+                            ? 'prize-numbers special-prize'
+                            : 'prize-numbers';
+                        html += `<tr>
+                            <td class="prize-label">${p.label}</td>
+                            <td class="${cls}">${p.numbers.join(' &nbsp; ')}</td>
+                        </tr>`;
+                    });
+                    html += `</table></div>`;
+                });
+                html += `</div></div>`;
+            });
+            resultBox.innerHTML = html;
+        }
+
+        async function loadResult(isoDate) {
+            showStatus('loading', '⏳ Đang tải...');
+            resultBox.innerHTML = '';
+            const year = isoDate.slice(0, 4);
+            const url = `data/${year}/${isoDate}.json?_=${Date.now()}`;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Chưa có dữ liệu cho ngày này.');
+                const data = await res.json();
+                showStatus('success', `✅ Kết quả ngày ${isoDate.split('-').reverse().join('/')}`);
+                renderResult(data);
+            } catch (err) {
+                showStatus('error', '❌ ' + err.message);
+            }
+        }
+
+        btnSearch.addEventListener('click', () => {
+            if (!dateInput.value) {
+                showStatus('error', 'Vui lòng chọn ngày.');
+                return;
+            }
+            loadResult(dateInput.value);
+        });
+
+        loadResult(dateInput.value);
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+name: Scrape xổ số
+
+on:
+  schedule:
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài thư viện
+        run: pip install -r requirements.txt
+
+      - name: Chạy scraper
+        run: python scraper.py
+
+      - name: Commit dữ liệu mới
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "🤖 Cập nhật KQXS $(date +'%Y-%m-%d')"
+          git push

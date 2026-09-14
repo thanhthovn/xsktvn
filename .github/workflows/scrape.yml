@@ -2,8 +2,7 @@ name: Scrape xổ số
 
 on:
   schedule:
-    # Chạy lúc 22:00 UTC = 05:00 VN (hôm qua đã có KQ đầy đủ)
-    - cron: "0 22 * * *"
+    - cron: "0 22 * * *"   # 05:00 VN
   workflow_dispatch:
 
 permissions:
@@ -12,6 +11,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -33,4 +33,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
           git diff --staged --quiet || git commit -m "🤖 Cập nhật KQXS $(date +'%Y-%m-%d')"
+          git pull --rebase origin main || true
           git push

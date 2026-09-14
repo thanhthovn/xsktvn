@@ -5,11 +5,15 @@ Tra cứu kết quả xổ số Việt Nam 3 miền — tự động cập nhậ
 ## 🌐 Demo
 👉 https://thanhthovn.github.io/xsktvn/
 
-## ⚙️ Cách hoạt động
-- GitHub Actions chạy `scraper.py` mỗi ngày lúc 05:00 (giờ VN).
-- Cào KQXS của **ngày hôm qua** (vì lúc 5h sáng KQ hôm qua đã có đầy đủ).
-- Dữ liệu lưu thành `data/YYYY/YYYY-MM-DD.json`.
-- File `data/index.json` chứa danh sách các ngày có dữ liệu.
-- Trang web đọc file JSON tĩnh → hiển thị lịch trạng thái + kết quả.
+## ✨ Tính năng
 
-## 📁 Cấu trúc
+### 📊 Xem kết quả xổ số
+- Tra cứu KQXS 3 miền (Nam / Trung / Bắc) theo ngày
+- Chọn ngày bằng date picker hoặc click vào lịch
+- Lịch trạng thái hiển thị ngày nào đã có dữ liệu (ô xanh) / chưa có (ô xám)
+- Đài chính miền Nam mỗi ngày được tô **nền đỏ cam** nổi bật
+- Tự động chọn ngày mặc định theo giờ VN:
+  - **Sau 16h** → chọn hôm nay
+  - **Trước 16h** → chọn hôm qua
+- Nút ẩn/hiện lịch `DATA_STATUS_BY_MONTH`
+

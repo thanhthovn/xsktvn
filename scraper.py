@@ -5,13 +5,14 @@ Repo: xsktvn
 
 - Chỉ cào từ HÔM QUA lùi về 365 ngày (bỏ qua hôm nay).
 - Chỉ lấy đài có trong lịch xổ số của ngày đó (theo thứ).
-- Bỏ qua các box_kqxs của ngày cũ hơn trên cùng trang.
+- Chỉ lấy kết quả của NGÀY CHÍNH (bỏ qua ngày cũ hơn).
 """
 import os
 import json
 import re
 import time
 from datetime import datetime, timedelta
+from unicodedata import normalize as uni_normalize
 
 import requests
 from bs4 import BeautifulSoup
@@ -25,11 +26,11 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 365
+DAYS_TO_SCRAPE = 15
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============
-# Python: 0=Thứ Hai, 1=Thứ Ba, ..., 6=Chủ Nhật
+# Python: 0=Thứ Hai, ..., 6=Chủ Nhật
 
 STATIONS_BY_WEEKDAY_MN = {
     0: ["TP. HCM", "Đồng Tháp", "Cà Mau"],
@@ -70,7 +71,6 @@ WEEKDAY_NAMES = [
 # ============ HÀM TIỆN ÍCH ============
 
 def fetch_html(date_str, max_retry=3):
-    """Tải HTML, retry tối đa max_retry lần."""
     url = f"https://www.minhngoc.net/ket-qua-xo-so/{date_str}.html"
     for attempt in range(max_retry):
         try:
@@ -86,7 +86,6 @@ def fetch_html(date_str, max_retry=3):
 
 
 def extract_numbers(td):
-    """Trích xuất các số từ 1 ô <td>."""
     divs = td.find_all("div", recursive=False)
     if not divs:
         text = td.get_text(strip=True)
@@ -98,31 +97,18 @@ def extract_numbers(td):
 
 
 def normalize_name(name):
-    """Chuẩn hóa tên đài để so sánh (bỏ dấu, lowercase)."""
-    import unicodedata
+    """Bỏ dấu, lowercase, chuẩn hóa để so sánh tên đài."""
     name = name.lower().strip()
-    name = unicodedata.normalize("NFD", name)
-    name = "".join(c for c in name if unicodedata.category(c) != "Mn")
+    name = uni_normalize("NFD", name)
+    name = "".join(c for c in name if uni_normalize("NFC", c) == c)
     name = name.replace("đ", "d")
     name = re.sub(r"\s+", " ", name)
     return name
 
 
-def _is_before(el1, el2):
-    """Kiểm tra el1 có nằm trước el2 trong document không."""
-    for el in el1.previous_elements:
-        if el is el2:
-            return True
-    return False
-
-
 # ============ PARSE TỪNG MIỀN ============
 
 def parse_mien_nam_trung(table, allowed_stations):
-    """
-    Parse bảng miền Nam/Trung.
-    allowed_stations: list tên đài cho phép (đã normalize).
-    """
     stations = []
     right_tables = table.select("table.rightcl")
 
@@ -134,7 +120,6 @@ def parse_mien_nam_trung(table, allowed_stations):
         if not name:
             continue
 
-        # Lọc theo lịch: chỉ lấy đài có trong danh sách
         if normalize_name(name) not in allowed_stations:
             continue
 
@@ -173,10 +158,6 @@ def parse_mien_nam_trung(table, allowed_stations):
 
 
 def parse_mien_bac(table, allowed_station):
-    """
-    Parse bảng miền Bắc.
-    allowed_station: tên đài duy nhất cho phép (đã normalize), có thể None = lấy hết.
-    """
     stations = []
     name = "Miền Bắc"
     code = ""
@@ -218,20 +199,14 @@ def parse_mien_bac(table, allowed_station):
 # ============ PARSE TRANG ============
 
 def parse_page(html, date_str):
-    """
-    Parse trang, CHỈ lấy kết quả của NGÀY CHÍNH.
-    Lọc đài theo lịch xổ số của thứ trong tuần.
-    """
     soup = BeautifulSoup(html, "lxml")
     regions = []
 
-    # ===== Xác định thứ của ngày =====
     d, m, y = date_str.split("-")
     dt = datetime(int(y), int(m), int(d))
-    weekday = dt.weekday()  # 0=Thứ Hai, 6=Chủ Nhật
+    weekday = dt.weekday()
     weekday_name = WEEKDAY_NAMES[weekday]
 
-    # Lấy danh sách đài cho phép
     allowed_mn = {normalize_name(s) for s in STATIONS_BY_WEEKDAY_MN.get(weekday, [])}
     allowed_mt = {normalize_name(s) for s in STATIONS_BY_WEEKDAY_MT.get(weekday, [])}
     allowed_mb = STATIONS_BY_WEEKDAY_MB.get(weekday, "")
@@ -241,30 +216,35 @@ def parse_page(html, date_str):
     print(f"   MT: {STATIONS_BY_WEEKDAY_MT.get(weekday, [])}")
     print(f"   MB: {allowed_mb}")
 
-    # ===== Chỉ lấy box trước h1.pagetitle thứ hai =====
-    all_h1 = soup.select("h1.pagetitle")
-    if not all_h1:
-        print("⚠ Không tìm thấy h1.pagetitle")
+    noidung = soup.select_one("#noidung")
+    if not noidung:
+        print("⚠ Không tìm thấy #noidung")
         return {"regions": []}
 
-    first_h1_text = all_h1[0].get_text(strip=True)
-    print(f"→ Ngày chính trên trang: {first_h1_text}")
+    # Quét tuần tự, dừng khi gặp h1.pagetitle thứ hai
+    valid_boxes = []
+    h1_count = 0
+    first_h1_text = ""
 
-    if len(all_h1) >= 2:
-        second_h1 = all_h1[1]
-        all_boxes = soup.select("div.box_kqxs")
-        valid_boxes = []
-        for box in all_boxes:
-            if _is_before(box, second_h1):
-                valid_boxes.append(box)
-            else:
+    for el in noidung.descendants:
+        if not hasattr(el, "name") or el.name is None:
+            continue
+
+        if el.name == "h1" and "pagetitle" in (el.get("class") or []):
+            h1_count += 1
+            if h1_count == 1:
+                first_h1_text = el.get_text(strip=True)
+                print(f"→ Ngày chính trên trang: {first_h1_text}")
+            elif h1_count == 2:
+                print(f"→ Gặp ngày thứ hai, dừng quét")
                 break
-        print(f"→ Trang có {len(all_h1)} ngày, chỉ lấy {len(valid_boxes)} box của ngày chính")
-    else:
-        valid_boxes = soup.select("div.box_kqxs")
-        print(f"→ Trang có 1 ngày, lấy {len(valid_boxes)} box")
 
-    # ===== Parse từng box =====
+        if el.name == "div" and "box_kqxs" in (el.get("class") or []):
+            if h1_count == 1:
+                valid_boxes.append(el)
+
+    print(f"→ Lấy được {len(valid_boxes)} box của ngày chính")
+
     for box in valid_boxes:
         title_a = box.select_one(".top .title a")
         if not title_a:
@@ -316,7 +296,6 @@ def parse_page(html, date_str):
 # ============ LƯU / ĐỌC FILE ============
 
 def save_json(date_str, data):
-    """Lưu data/yyyy/yyyy-mm-dd.json"""
     d, m, y = date_str.split("-")
     iso = f"{y}-{m}-{d}"
     year_dir = os.path.join(OUTPUT_DIR, y)
@@ -329,7 +308,6 @@ def save_json(date_str, data):
 
 
 def scrape_date(date_str):
-    """Cào 1 ngày, lưu JSON."""
     html = fetch_html(date_str)
     data = parse_page(html, date_str)
     if not data.get("regions"):
@@ -340,7 +318,6 @@ def scrape_date(date_str):
 
 
 def build_index():
-    """Quét thư mục data/ và tạo file index.json."""
     print("→ Đang tạo index.json...")
     dates = []
     if os.path.exists(OUTPUT_DIR):
@@ -370,7 +347,6 @@ def build_index():
 
 def main():
     today = datetime.now()
-    # Bắt đầu từ hôm qua (i=1), bỏ qua hôm nay (i=0)
     for i in range(1, DAYS_TO_SCRAPE + 1):
         d = today - timedelta(days=i)
         date_str = d.strftime("%d-%m-%Y")

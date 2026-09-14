@@ -33,4 +33,3 @@ jobs:
           git add data/
           git diff --staged --quiet || git commit -m "🤖 Cập nhật KQXS $(date +'%Y-%m-%d')"
           git push
-

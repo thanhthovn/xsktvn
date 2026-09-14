@@ -2,7 +2,7 @@ name: Scrape xổ số
 
 on:
   schedule:
-    - cron: "0 22 * * *"   # 05:00 VN
+    - cron: "0 12 * * *"   # 05:00 VN
   workflow_dispatch:
 
 permissions:

@@ -3,7 +3,7 @@
 scraper.py - Cào KQXS từ minhngoc.net
 Repo: xsktvn
 
-- Chỉ cào từ HÔM QUA lùi về 365 ngày (bỏ qua hôm nay).
+- Chỉ cào từ HÔM QUA lùi về xxx ngày (bỏ qua hôm nay).
 - Chỉ lấy box có NGÀY TRONG BOX khớp với ngày cần cào.
 - Lọc đài theo lịch xổ số của thứ trong tuần.
 - Miền Bắc: dùng tên đài từ lịch (vì HTML không có tên đài).
@@ -27,7 +27,7 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 623
+DAYS_TO_SCRAPE = 3
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============

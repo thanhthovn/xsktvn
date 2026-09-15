@@ -351,7 +351,7 @@ def build_index():
 
 def main():
     today = datetime.now()
-    for i in range(1, DAYS_TO_SCRAPE + 1):
+    for i in range(0, DAYS_TO_SCRAPE):
         d = today - timedelta(days=i)
         date_str = d.strftime("%d-%m-%Y")
         iso = d.strftime("%Y-%m-%d")

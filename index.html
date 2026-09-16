@@ -739,7 +739,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.6.8
+            &nbsp;|&nbsp; VERSION 7.6.9
         </div>
     </div>
 
@@ -1051,6 +1051,27 @@
             }
         }
 
+        function updateProbabilityTypes() {
+            const region = probRegion.value;
+            const currentType = probType.value;
+
+            // Cặp số và Bộ 3 số chỉ áp dụng cho Miền Bắc.
+            const mbOnlyTypes = new Set(['cap', 'bo3']);
+
+            Array.from(probType.options).forEach(option => {
+                const isMbOnly = mbOnlyTypes.has(option.value);
+                option.hidden = isMbOnly && region !== 'bac';
+                option.disabled = isMbOnly && region !== 'bac';
+            });
+
+            // Khi chuyển khỏi Miền Bắc, tự động chuyển về loại hợp lệ.
+            if (region !== 'bac' && mbOnlyTypes.has(currentType)) {
+                probType.value = '2so';
+            }
+
+            updateProbabilityExtra();
+        }
+
         function updateStationDropdown() {
             const region = probRegion.value;
             const stations = STATIONS_BY_REGION[region] || [];
@@ -1061,20 +1082,26 @@
                 opt.textContent = name;
                 probStation.appendChild(opt);
             });
+
+            updateProbabilityTypes();
+        }
+
+        function updateProbabilityExtra() {
+            const t = probType.value;
+            if (t === 'cap' || t === 'bo3') {
+                probExtraGroup.style.display = 'flex';
+                probExtra.placeholder = t === 'cap'
+                    ? 'VD: 23-53, 15-58'
+                    : 'VD: 15-58-69, 23-53-96';
+            } else {
+                probExtraGroup.style.display = 'none';
+            }
         }
 
         probRegion.addEventListener('change', updateStationDropdown);
         updateStationDropdown();
 
-        probType.addEventListener('change', () => {
-            const t = probType.value;
-            if (t === 'cap' || t === 'bo3') {
-                probExtraGroup.style.display = 'flex';
-                probExtra.placeholder = t === 'cap' ? 'VD: 23-53, 15-58' : 'VD: 15-58-69, 23-53-96';
-            } else {
-                probExtraGroup.style.display = 'none';
-            }
-        });
+        probType.addEventListener('change', updateProbabilityExtra);
 
         function getDatesToLoad() {
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;

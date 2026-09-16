@@ -699,7 +699,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 6.0
+            &nbsp;|&nbsp; VERSION 6.5
         </div>
     </div>
 
@@ -924,16 +924,7 @@
                     html += `<div class="${cardClass}"><div class="station-header"><span class="station-name">${st.name}</span><span class="station-code">${st.code || ''}</span></div><table class="prize-table">`;
                     st.prizes.forEach(p => {
                         const cls = p.label === 'Giải ĐB' ? 'prize-numbers special-prize' : 'prize-numbers';
-
-                        // Miền Nam + Miền Trung: Giải 6 có 3 giải -> hiển thị riêng 6A, 6B, 6C
-                        if (p.label === 'Giải 6' && (r.key === 'nam' || r.key === 'trung') && p.numbers.length === 3) {
-                            p.numbers.forEach((num, idx) => {
-                                const subLabel = `Giải 6${String.fromCharCode(65 + idx)}`;
-                                html += `<tr><td class="prize-label">${subLabel}</td><td class="${cls}">${num}</td></tr>`;
-                            });
-                        } else {
-                            html += `<tr><td class="prize-label">${p.label}</td><td class="${cls}">${p.numbers.join(' &nbsp; ')}</td></tr>`;
-                        }
+                        html += `<tr><td class="prize-label">${p.label}</td><td class="${cls}">${p.numbers.join(' &nbsp; ')}</td></tr>`;
                     });
                     html += `</table></div>`;
                 });

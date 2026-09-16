@@ -491,16 +491,7 @@
             border-radius: 2px;
         }
 
-        /* Ngày kết quả theo miền */
-.result-date-line {
-  margin-top: 3px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  opacity: 0.95;
-}
-
-.prize-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .prize-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
         .prize-table tr { border-bottom: 1px dashed var(--green-dark); }
         .prize-table tr:last-child { border-bottom: none; }
         .prize-table tr:hover { background: rgba(53, 208, 111, 0.045); }
@@ -745,7 +736,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.2
+            &nbsp;|&nbsp; VERSION 7.3
         </div>
     </div>
 
@@ -997,17 +988,7 @@
             resultBox.innerHTML = html;
         }
 
-        async 
-function updateResultDateLine(dateStr) {
-  const el = document.getElementById('resultDateLine');
-  if (!el || !dateStr) return;
-  const d = new Date(dateStr + 'T00:00:00+07:00');
-  if (Number.isNaN(d.getTime())) return;
-  const days = ['CHỦ NHẬT','THỨ HAI','THỨ BA','THỨ TƯ','THỨ NĂM','THỨ SÁU','THỨ BẢY'];
-  el.textContent = ` — ${days[d.getDay()]} NGÀY ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-}
-
-function loadResult(isoDate) {
+        async function loadResult(isoDate) {
             currentIsoDate = isoDate;
             showStatus('loading', 'LOADING_DATA...');
             resultBox.innerHTML = '';

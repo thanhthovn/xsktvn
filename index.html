@@ -549,13 +549,7 @@
             color: var(--yellow); font-weight: 800; font-size: 1rem;
             text-shadow: 0 0 6px var(--yellow);
         }
-        .prob-table .bar {
-            display: inline-block; height: 10px;
-            background: linear-gradient(90deg, var(--green-dim), var(--green));
-            border-radius: 2px; vertical-align: middle;
-            margin-left: 8px; box-shadow: 0 0 6px var(--green-dim);
-        }
-        .prob-table .percent { color: var(--cyan); font-weight: 700; }
+.prob-table .percent { color: var(--cyan); font-weight: 700; }
 
         .prob-summary {
             display: flex; justify-content: center; gap: 15px;
@@ -675,6 +669,7 @@
                 <label>LOẠI</label>
                 <select id="probType">
                     <option value="2so">2 số đuôi</option>
+                    <option value="2so_g8_db">2 số đuôi Giải 8 + Giải ĐB</option>
                     <option value="3so">3 số đuôi</option>
                     <option value="cap">Cặp số (MB)</option>
                     <option value="bo3">Bộ 3 số (MB)</option>
@@ -745,7 +740,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; Version 7.5
+            &nbsp;|&nbsp; Version 7.7
         </div>
     </div>
 
@@ -1158,6 +1153,129 @@
             return { counter, totalNumbers };
         }
 
+        // Phân tích riêng 2 số đuôi của Giải 8 và Giải ĐB (Miền Nam / Miền Trung)
+        function analyzeTailG8DB(allData, regionKey, stationFilter) {
+            const counter = {};
+            let totalNumbers = 0;
+
+            allData.forEach(day => {
+                day.regions.forEach(r => {
+                    if (r.key !== regionKey) return;
+
+                    r.stations.forEach(st => {
+                        if (stationFilter && stationFilter !== 'all' && st.name.trim() !== stationFilter) return;
+
+                        st.prizes.forEach(p => {
+                            if (p.label !== 'Giải 8' && p.label !== 'Giải ĐB') return;
+
+                            p.numbers.forEach(num => {
+                                if (!num || num.length < 2) return;
+
+                                const tail = num.slice(-2);
+                                if (!counter[tail]) {
+                                    counter[tail] = {
+                                        count: 0,
+                                        dates: new Set(),
+                                        g8Count: 0,
+                                        dbCount: 0,
+                                        g8Dates: new Set(),
+                                        dbDates: new Set()
+                                    };
+                                }
+
+                                counter[tail].count++;
+                                counter[tail].dates.add(day.date);
+
+                                if (p.label === 'Giải 8') {
+                                    counter[tail].g8Count++;
+                                    counter[tail].g8Dates.add(day.date);
+                                } else {
+                                    counter[tail].dbCount++;
+                                    counter[tail].dbDates.add(day.date);
+                                }
+
+                                totalNumbers++;
+                            });
+                        });
+                    });
+                });
+            });
+
+            return { counter, totalNumbers };
+        }
+
+        function renderTailG8DBResult(counter, totalNumbers, regionLabel, daysCount, firstDate, lastDate) {
+            const sorted = Object.entries(counter).sort((a, b) => b[1].count - a[1].count);
+            const top = sorted.slice(0, 30);
+
+            let html = `<div class="prob-summary">
+                <div class="box"><div class="val">${totalNumbers.toLocaleString()}</div><div class="lbl">Tổng lượt G8 + ĐB</div></div>
+                <div class="box"><div class="val">${Object.keys(counter).length}</div><div class="lbl">Số khác nhau</div></div>
+                <div class="box"><div class="val">${daysCount}</div><div class="lbl">Ngày phân tích</div></div>
+            </div>`;
+
+            html += `<div style="text-align:center; color:var(--cyan); margin:10px 0; font-size:0.85rem;">
+                📅 TỪ ${firstDate.split('-').reverse().join('/')} ĐẾN ${lastDate.split('-').reverse().join('/')}
+            </div>`;
+
+            html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
+                📊 TOP 30 SỐ ĐUÔI G8 + ĐB — ${regionLabel.toUpperCase()}
+            </h3>`;
+
+            html += `<div style="overflow-x:auto;">
+                <table class="prob-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Số</th>
+                            <th>G8</th>
+                            <th>ĐB</th>
+                            <th>Tổng lần</th>
+                            <th>Xác suất</th>
+                            <th>Ngày xuất hiện</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            top.forEach((item, i) => {
+                const [num, info] = item;
+                const pct = totalNumbers > 0 ? (info.count / totalNumbers * 100).toFixed(2) : '0.00';
+
+                const dates = Array.from(info.dates)
+                    .sort()
+                    .map(d => d.split('-').reverse().join('/'));
+                const dateText = dates.length ? dates.join(', ') : '-';
+
+                html += `<tr>
+                    <td class="rank">${i + 1}</td>
+                    <td class="num-highlight">${num}</td>
+                    <td>${info.g8Count}</td>
+                    <td>${info.dbCount}</td>
+                    <td>${info.count}</td>
+                    <td class="percent">${pct}%</td>
+                    <td style="text-align:left; min-width:240px; white-space:normal; color:var(--cyan); font-size:0.78rem; line-height:1.7;">${dateText}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+
+            const csvData = sorted.map(([num, info]) => ({
+                num,
+                g8Count: info.g8Count,
+                dbCount: info.dbCount,
+                count: info.count,
+                dates: Array.from(info.dates).sort().map(d => d.split('-').reverse().join('/')).join(', ')
+            }));
+
+            html += `<div style="text-align:center; margin-top:20px;">
+                <button class="btn btn-orange" onclick='downloadG8DBCSV(${JSON.stringify(csvData)}, "xacsuat_duoi_g8_db")'>
+                    📥 TẢI CSV
+                </button>
+            </div>`;
+
+            return html;
+        }
+
         function analyzeCombos(allData, combos) {
             const result = {};
             combos.forEach(combo => {
@@ -1186,9 +1304,7 @@
         function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate) {
             const sorted = Object.entries(counter).sort((a, b) => b[1].count - a[1].count);
             const top = sorted.slice(0, 30);
-            const maxCount = top[0] ? top[0][1].count : 1;
-
-            let html = `<div class="prob-summary">
+let html = `<div class="prob-summary">
                 <div class="box"><div class="val">${totalNumbers.toLocaleString()}</div><div class="lbl">Tổng số lần</div></div>
                 <div class="box"><div class="val">${Object.keys(counter).length}</div><div class="lbl">Số khác nhau</div></div>
                 <div class="box"><div class="val">${daysCount}</div><div class="lbl">Ngày phân tích</div></div>
@@ -1220,9 +1336,7 @@
                 const [num, info] = item;
                 const count = info.count;
                 const pct = (count / totalNumbers * 100).toFixed(2);
-                const barWidth = Math.round(count / maxCount * 100);
-
-                const dates = Array.from(info.dates)
+const dates = Array.from(info.dates)
                     .sort()
                     .map(d => d.split('-').reverse().join('/'));
 
@@ -1235,9 +1349,6 @@
                     <td class="percent">${pct}%</td>
                     <td style="text-align:left; min-width:240px; white-space:normal; color:var(--cyan); font-size:0.78rem; line-height:1.7;">
                         ${dateText}
-                    </td>
-                    <td style="text-align:left; padding-left:15px;">
-                        <span class="bar" style="width:${barWidth}%;"></span>
                     </td>
                 </tr>`;
             });
@@ -1328,6 +1439,24 @@
             URL.revokeObjectURL(link.href);
         }
 
+        function downloadG8DBCSV(data, filename) {
+            let csv = "\uFEFF" + "STT,Số,G8,ĐB,Tổng lần,Xác suất,Ngày xuất hiện\n";
+            const total = data.reduce((sum, item) => sum + item.count, 0);
+
+            data.forEach((item, i) => {
+                const pct = total > 0 ? (item.count / total * 100).toFixed(2) + "%" : "0%";
+                const dates = `"${item.dates.replace(/"/g, '""')}"`;
+                csv += `${i + 1},${item.num},${item.g8Count},${item.dbCount},${item.count},${pct},${dates}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename + '.csv';
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
         btnAnalyze.addEventListener('click', async () => {
             const type = probType.value;
             const region = probRegion.value;
@@ -1406,6 +1535,47 @@
                     const result = analyzeCombos(allData, combos);
                     probResult.innerHTML = renderComboResult(result, combos, allData.length);
                     showProbStatus('success', `HOÀN TẤT :: ${allData.length} NGÀY`);
+                    btnAnalyze.disabled = false;
+                    return;
+                }
+
+                if (type === '2so_g8_db') {
+                    if (region !== 'nam' && region !== 'trung') {
+                        showProbStatus('error', 'CHỈ HỖ TRỢ MIỀN NAM VÀ MIỀN TRUNG');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    showProbStatus('loading', 'ĐANG TẢI DỮ LIỆU...');
+                    const allData = await loadDaysData();
+                    if (allData.length === 0) {
+                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    showProbStatus('loading', 'ĐANG TÍNH TOÁN...');
+                    await new Promise(r => setTimeout(r, 50));
+
+                    const { counter, totalNumbers } = analyzeTailG8DB(allData, region, stationFilter);
+                    if (totalNumbers === 0) {
+                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU GIẢI 8 / GIẢI ĐB');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    const regionNames = { nam: 'Miền Nam', trung: 'Miền Trung' };
+                    const regionLabel = stationFilter && stationFilter !== 'all'
+                        ? `${stationFilter} (${regionNames[region]})`
+                        : regionNames[region];
+
+                    const firstDate = allData[allData.length - 1].date;
+                    const lastDate = allData[0].date;
+
+                    probResult.innerHTML = renderTailG8DBResult(
+                        counter, totalNumbers, regionLabel, allData.length, firstDate, lastDate
+                    );
+                    showProbStatus('success', `HOÀN TẤT :: ${allData.length} NGÀY, ${totalNumbers.toLocaleString()} LƯỢT G8 + ĐB`);
                     btnAnalyze.disabled = false;
                     return;
                 }

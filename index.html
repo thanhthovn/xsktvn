@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XSKTVN // TERMINAL</title>
+    <title>XSKTVN // TERMINAL SCRAPING .....</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -155,6 +155,42 @@
         .date-form label, .prob-form label {
             font-weight: 700; color: var(--green);
             text-shadow: 0 0 4px var(--green-dim);
+        }
+
+        /* ===== ĐIỀU HƯỚNG NGÀY ===== */
+        .date-nav-btn {
+            width: 42px;
+            height: 38px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 42px;
+            background: rgba(53, 208, 111, 0.08);
+            color: var(--green);
+            border: 1px solid var(--green-dim);
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1.35rem;
+            font-weight: 800;
+            line-height: 1;
+            transition: all 0.15s;
+        }
+        .date-nav-btn:hover {
+            background: var(--green);
+            color: #000;
+            border-color: var(--green);
+            box-shadow: 0 0 15px rgba(53, 208, 111, 0.55);
+            transform: scale(1.05);
+        }
+        .date-nav-btn:active {
+            transform: scale(0.96);
+        }
+        .date-form .date-nav-btn:focus-visible {
+            outline: 1px solid var(--cyan);
+            outline-offset: 2px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.45);
         }
         .date-form label::before, .prob-form label::before {
             content: '$ '; color: var(--green-dim);
@@ -581,12 +617,13 @@
         <!-- ===== TAB 1: KẾT QUẢ ===== -->
         <div id="tab-result" class="tab-content active">
             <div class="date-form">
+                                <button type="button" class="date-nav-btn" id="prevDateBtn" onclick="changeDateBy(-1)" title="Ngày trước" aria-label="Ngày trước">‹</button>
                 <label for="dateInput">SELECT_DATE</label>
                 <input type="date" id="dateInput" />
+                <button type="button" class="date-nav-btn" id="nextDateBtn" onclick="changeDateBy(1)" title="Ngày sau" aria-label="Ngày sau">›</button>
             </div>
 
             <div class="status" id="status"></div>
-
 
             <div id="result"></div>
 
@@ -698,8 +735,8 @@
         </div>
 
         <div class="footer">
-            SOURCE: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 6.7
+            SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
+            &nbsp;|&nbsp; VERSION 7.0
         </div>
     </div>
 
@@ -839,6 +876,24 @@
         function showStatus(type, msg) {
             statusBox.className = 'status ' + type;
             statusBox.textContent = msg;
+        }
+
+        // Chuyển ngày trước / ngày sau
+        function changeDateBy(offset) {
+            if (!dateInput.value) return;
+
+            const [y, m, d] = dateInput.value.split('-').map(Number);
+            const date = new Date(Date.UTC(y, m - 1, d));
+            date.setUTCDate(date.getUTCDate() + offset);
+
+            const nextIso = [
+                date.getUTCFullYear(),
+                String(date.getUTCMonth() + 1).padStart(2, '0'),
+                String(date.getUTCDate()).padStart(2, '0')
+            ].join('-');
+
+            dateInput.value = nextIso;
+            loadResult(nextIso);
         }
         function showProbStatus(type, msg) {
             probStatus.className = 'status ' + type;

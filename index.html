@@ -699,7 +699,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 6.8
+            &nbsp;|&nbsp; VERSION 6.7
         </div>
     </div>
 
@@ -943,6 +943,7 @@
                 if (!res.ok) throw new Error('NO_DATA_FOR_THIS_DATE');
                 const data = await res.json();
                 renderResult(data);
+                statusBox.style.display = 'none';
             } catch (err) {
                 if (err.message === 'NO_DATA_FOR_THIS_DATE') {
                     // Nếu hôm nay chưa có dữ liệu, dẫn thẳng tới Minh Ngọc theo ngày VN hiện tại.

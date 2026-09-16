@@ -1127,21 +1127,34 @@
             allData.forEach(day => {
                 day.regions.forEach(r => {
                     if (r.key !== regionKey) return;
+
                     r.stations.forEach(st => {
                         if (stationFilter && stationFilter !== 'all') {
                             if (st.name.trim() !== stationFilter) return;
                         }
+
                         st.prizes.forEach(p => {
                             p.numbers.forEach(num => {
                                 if (num.length < tailLen) return;
+
                                 const tail = num.slice(-tailLen);
-                                counter[tail] = (counter[tail] || 0) + 1;
+
+                                if (!counter[tail]) {
+                                    counter[tail] = {
+                                        count: 0,
+                                        dates: new Set()
+                                    };
+                                }
+
+                                counter[tail].count++;
+                                counter[tail].dates.add(day.date);
                                 totalNumbers++;
                             });
                         });
                     });
                 });
             });
+
             return { counter, totalNumbers };
         }
 
@@ -1171,9 +1184,9 @@
         }
 
         function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate) {
-            const sorted = Object.entries(counter).sort((a, b) => b[1] - a[1]);
+            const sorted = Object.entries(counter).sort((a, b) => b[1].count - a[1].count);
             const top = sorted.slice(0, 30);
-            const maxCount = top[0] ? top[0][1] : 1;
+            const maxCount = top[0] ? top[0][1].count : 1;
 
             let html = `<div class="prob-summary">
                 <div class="box"><div class="val">${totalNumbers.toLocaleString()}</div><div class="lbl">Tổng số lần</div></div>
@@ -1185,19 +1198,67 @@
                 📅 TỪ ${firstDate.split('-').reverse().join('/')} ĐẾN ${lastDate.split('-').reverse().join('/')}
             </div>`;
 
-            html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">📊 TOP 30 SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}</h3>`;
-            html += `<table class="prob-table"><thead><tr><th>#</th><th>Số</th><th>Số lần</th><th>Xác suất</th><th>Biểu đồ</th></tr></thead><tbody>`;
+            html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
+                📊 TOP 30 SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}
+            </h3>`;
+
+            html += `<div style="overflow-x:auto;">
+                <table class="prob-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Số</th>
+                            <th>Số lần</th>
+                            <th>Xác suất</th>
+                            <th>Ngày xuất hiện</th>
+                            <th>Biểu đồ</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
 
             top.forEach((item, i) => {
-                const [num, count] = item;
+                const [num, info] = item;
+                const count = info.count;
                 const pct = (count / totalNumbers * 100).toFixed(2);
                 const barWidth = Math.round(count / maxCount * 100);
-                html += `<tr><td class="rank">${i + 1}</td><td class="num-highlight">${num}</td><td>${count}</td><td class="percent">${pct}%</td><td style="text-align:left; padding-left:15px;"><span class="bar" style="width:${barWidth}%;"></span></td></tr>`;
-            });
-            html += `</tbody></table>`;
 
-            const csvData = JSON.stringify(sorted).replace(/'/g, "&#39;");
-            html += `<div style="text-align:center; margin-top:20px;"><button class="btn btn-orange" onclick='downloadCSV(${csvData}, "xacsuat_${tailLen}so")'>📥 TẢI CSV</button></div>`;
+                const dates = Array.from(info.dates)
+                    .sort()
+                    .map(d => d.split('-').reverse().join('/'));
+
+                const dateText = dates.length > 0 ? dates.join(', ') : '-';
+
+                html += `<tr>
+                    <td class="rank">${i + 1}</td>
+                    <td class="num-highlight">${num}</td>
+                    <td>${count}</td>
+                    <td class="percent">${pct}%</td>
+                    <td style="text-align:left; min-width:240px; white-space:normal; color:var(--cyan); font-size:0.78rem; line-height:1.7;">
+                        ${dateText}
+                    </td>
+                    <td style="text-align:left; padding-left:15px;">
+                        <span class="bar" style="width:${barWidth}%;"></span>
+                    </td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+
+            const csvData = sorted.map(([num, info]) => ({
+                num: num,
+                count: info.count,
+                dates: Array.from(info.dates)
+                    .sort()
+                    .map(d => d.split('-').reverse().join('/'))
+                    .join(', ')
+            }));
+
+            html += `<div style="text-align:center; margin-top:20px;">
+                <button class="btn btn-orange" onclick='downloadProbabilityCSV(${JSON.stringify(csvData)}, "xacsuat_${tailLen}so")'>
+                    📥 TẢI CSV
+                </button>
+            </div>`;
+
             return html;
         }
 
@@ -1242,6 +1303,29 @@
             link.href = URL.createObjectURL(blob);
             link.download = filename + '.csv';
             link.click();
+        }
+
+        function downloadProbabilityCSV(data, filename) {
+            let csv = "\uFEFF" + "STT,Số,Số lần,Xác suất,Ngày xuất hiện\n";
+
+            const totalNumbers = data.reduce((sum, item) => sum + item.count, 0);
+
+            data.forEach((item, i) => {
+                const pct = totalNumbers > 0
+                    ? (item.count / totalNumbers * 100).toFixed(2) + "%"
+                    : "0%";
+
+                const dates = `"${item.dates.replace(/"/g, '""')}"`;
+                csv += `${i + 1},${item.num},${item.count},${pct},${dates}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename + '.csv';
+            link.click();
+
+            URL.revokeObjectURL(link.href);
         }
 
         btnAnalyze.addEventListener('click', async () => {

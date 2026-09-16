@@ -474,18 +474,6 @@
             line-height: 1.6; word-spacing: 8px;
             text-shadow: 0 0 4px var(--green-dim);
         }
-        /* ===== GIẢI 6 / 4 / 3: MỖI SỐ MỘT HÀNG Ở MIỀN NAM & TRUNG ===== */
-        .region-nam .prize-table tr.stack-numbers td.prize-numbers,
-        .region-trung .prize-table tr.stack-numbers td.prize-numbers {
-            padding-top: 7px;
-            padding-bottom: 7px;
-        }
-        .stack-number {
-            display: block;
-            line-height: 1.55;
-            padding: 1px 0;
-            white-space: nowrap;
-        }
         .special-prize {
             color: var(--yellow); font-size: 1.2rem; font-weight: 800;
             text-shadow: 0 0 6px var(--yellow);
@@ -588,7 +576,7 @@
 
         <h1>XSKTVN</h1>
         <button class="prob-icon-btn" id="probIconBtn" onclick="toggleProbPanel()" title="Phân tích xác suất">🎲</button>
-        <div class="sub-title">KẾT QUẢ XỔ SỐ 3 MIỀN // AUTO-SCRAPED DAILY</div>
+        <div class="sub-title">KẾT QUẢ XỔ SỐ 03 MIỀN // AUTO-SCRAPED DAILY</div>
 
         <!-- ===== TAB 1: KẾT QUẢ ===== -->
         <div id="tab-result" class="tab-content active">
@@ -934,13 +922,8 @@
                     const cardClass = isMain ? 'station-card main-station' : 'station-card';
                     html += `<div class="${cardClass}"><div class="station-header"><span class="station-name">${st.name}</span><span class="station-code">${st.code || ''}</span></div><table class="prize-table">`;
                     st.prizes.forEach(p => {
-                        const stackNumbers = (r.key === 'nam' || r.key === 'trung') &&
-                            ['Giải 6', 'Giải 4', 'Giải 3'].includes(p.label);
                         const cls = p.label === 'Giải ĐB' ? 'prize-numbers special-prize' : 'prize-numbers';
-                        const numberHtml = stackNumbers
-                            ? p.numbers.map(num => `<span class="stack-number">${num}</span>`).join('')
-                            : p.numbers.join(' &nbsp; ');
-                        html += `<tr${stackNumbers ? ' class="stack-numbers"' : ''}><td class="prize-label">${p.label}</td><td class="${cls}">${numberHtml}</td></tr>`;
+                        html += `<tr><td class="prize-label">${p.label}</td><td class="${cls}">${p.numbers.join(' &nbsp; ')}</td></tr>`;
                     });
                     html += `</table></div>`;
                 });
@@ -971,7 +954,7 @@
                     resultBox.innerHTML = `
                         <div class="minhngoc-btn-wrap">
                             <a class="minhngoc-btn" href="${minhNgocUrl}" target="_blank" rel="noopener noreferrer" title="Xem kết quả ngày ${displayDate} trên Minh Ngọc">
-                                🔗 XEM KẾT QUẢ MINH NGỌC — <span class="date">${displayDate}</span>
+                                🔗 XEM KẾT QUẢ TRỰC TIẾP — <span class="date">${displayDate}</span>
                             </a>
                         </div>`;
                 } else {

@@ -942,7 +942,6 @@
                 const res = await fetch(`data/${year}/${isoDate}.json?_=${Date.now()}`);
                 if (!res.ok) throw new Error('NO_DATA_FOR_THIS_DATE');
                 const data = await res.json();
-                showStatus('success', `ACCESS_GRANTED :: ${isoDate.split('-').reverse().join('/')}`);
                 renderResult(data);
             } catch (err) {
                 if (err.message === 'NO_DATA_FOR_THIS_DATE') {

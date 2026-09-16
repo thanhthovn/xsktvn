@@ -740,7 +740,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.7.1
+            &nbsp;|&nbsp; VERSION 7.7.2
         </div>
     </div>
 
@@ -1164,6 +1164,15 @@
                                 if (!counter[tail]) counter[tail] = { count: 0, dates: new Set() };
                                 counter[tail].count++;
                                 counter[tail].dates.add(day.date);
+
+                                // Lưu giải mà số này xuất hiện trong từng ngày
+                                if (!counter[tail].datePrizes[day.date]) {
+                                    counter[tail].datePrizes[day.date] = new Set();
+                                }
+                                if (p.label) {
+                                    counter[tail].datePrizes[day.date].add(p.label);
+                                }
+
                                 totalNumbers++;
                             });
                         });
@@ -1195,7 +1204,8 @@
                                 if (!counter[tail]) {
                                     counter[tail] = {
                                         count: 0,
-                                        dates: new Set()
+                                        dates: new Set(),
+                                        datePrizes: {}
                                     };
                                 }
 
@@ -1273,7 +1283,13 @@
                 const pct = (count / totalNumbers * 100).toFixed(2);
                 const dates = Array.from(info.dates)
                     .sort()
-                    .map(d => d.split('-').reverse().join('/'));
+                    .map(d => {
+                        const dateLabel = d.split('-').reverse().join('/');
+                        const prizes = info.datePrizes && info.datePrizes[d]
+                            ? Array.from(info.datePrizes[d]).join(', ')
+                            : '';
+                        return prizes ? `${dateLabel} (${prizes})` : dateLabel;
+                    });
 
                 const dateText = dates.length > 0 ? dates.join(', ') : '-';
 
@@ -1295,7 +1311,13 @@
                 count: info.count,
                 dates: Array.from(info.dates)
                     .sort()
-                    .map(d => d.split('-').reverse().join('/'))
+                    .map(d => {
+                        const dateLabel = d.split('-').reverse().join('/');
+                        const prizes = info.datePrizes && info.datePrizes[d]
+                            ? Array.from(info.datePrizes[d]).join(', ')
+                            : '';
+                        return prizes ? `${dateLabel} (${prizes})` : dateLabel;
+                    })
                     .join(', ')
             }));
 

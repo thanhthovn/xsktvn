@@ -682,6 +682,8 @@
                 <select id="probType">
                     <option value="2so">2 số đuôi</option>
                     <option value="3so">3 số đuôi</option>
+                    <option value="g8">2 số giải 8</option>
+                    <option value="db">2 số giải đặc biệt</option>
                     <option value="cap">Cặp số (MB)</option>
                     <option value="bo3">Bộ 3 số (MB)</option>
                 </select>
@@ -739,7 +741,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.6.9
+            &nbsp;|&nbsp; VERSION 7.7.0
         </div>
     </div>
 
@@ -1058,14 +1060,26 @@
             // Cặp số và Bộ 3 số chỉ áp dụng cho Miền Bắc.
             const mbOnlyTypes = new Set(['cap', 'bo3']);
 
+            // Giải 8 và Giải đặc biệt chỉ áp dụng cho Miền Nam + Miền Trung.
+            const mnMtOnlyTypes = new Set(['g8', 'db']);
+
             Array.from(probType.options).forEach(option => {
                 const isMbOnly = mbOnlyTypes.has(option.value);
-                option.hidden = isMbOnly && region !== 'bac';
-                option.disabled = isMbOnly && region !== 'bac';
+                const isMnMtOnly = mnMtOnlyTypes.has(option.value);
+
+                option.hidden =
+                    (isMbOnly && region !== 'bac') ||
+                    (isMnMtOnly && region === 'bac');
+
+                option.disabled = option.hidden;
             });
 
-            // Khi chuyển khỏi Miền Bắc, tự động chuyển về loại hợp lệ.
-            if (region !== 'bac' && mbOnlyTypes.has(currentType)) {
+            // Nếu đổi sang miền không hỗ trợ loại đang chọn,
+            // tự động chuyển về 2 số đuôi.
+            if (
+                (region !== 'bac' && mbOnlyTypes.has(currentType)) ||
+                (region === 'bac' && mnMtOnlyTypes.has(currentType))
+            ) {
                 probType.value = '2so';
             }
 
@@ -1429,6 +1443,107 @@
                 const allData = await loadDaysData();
                 if (allData.length === 0) {
                     showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU');
+                    btnAnalyze.disabled = false;
+                    return;
+                }
+
+                // Xác suất 2 số Giải 8 / Giải đặc biệt cho Miền Nam + Miền Trung.
+                if (type === 'g8' || type === 'db') {
+                    const prizeIndex = type === 'g8' ? 0 : 0;
+                    const counter = {};
+                    let totalNumbers = 0;
+
+                    allData.forEach(day => {
+                        day.regions.forEach(r => {
+                            if (r.key !== region) return;
+
+                            r.stations.forEach(st => {
+                                if (stationFilter && stationFilter !== 'all' &&
+                                    st.name.trim() !== stationFilter) return;
+
+                                // Lấy đúng giải theo tên giải, ưu tiên dữ liệu có tên prize.
+                                const prize = st.prizes.find(p => {
+                                    const label = String(p.name || p.prize || p.label || '').toLowerCase();
+                                    return type === 'g8'
+                                        ? /giải\s*8|g8|giải tám/.test(label)
+                                        : /đặc\s*biệt|db/.test(label);
+                                });
+
+                                // Nếu dữ liệu không có tên giải, dùng vị trí đầu tiên cho Giải 8
+                                // theo cấu trúc dữ liệu hiện tại.
+                                const targetPrize = prize || (type === 'g8' ? st.prizes[prizeIndex] : null);
+                                if (!targetPrize) return;
+
+                                const numbers = Array.isArray(targetPrize.numbers)
+                                    ? targetPrize.numbers
+                                    : [];
+
+                                numbers.forEach(num => {
+                                    const n = String(num).replace(/\D/g, '').slice(-2).padStart(2, '0');
+                                    if (!/^\d{2}$/.test(n)) return;
+                                    if (!counter[n]) counter[n] = { count: 0, dates: new Set() };
+                                    counter[n].count++;
+                                    counter[n].dates.add(day.date);
+                                    totalNumbers++;
+                                });
+                            });
+                        });
+                    });
+
+                    if (totalNumbers === 0) {
+                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU GIẢI');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    const regionNames = { nam: 'Miền Nam', trung: 'Miền Trung', bac: 'Miền Bắc' };
+                    const prizeLabel = type === 'g8' ? 'GIẢI 8' : 'GIẢI ĐẶC BIỆT';
+                    const regionLabel = stationFilter && stationFilter !== 'all'
+                        ? `${stationFilter} (${regionNames[region]})`
+                        : regionNames[region];
+
+                    const sorted = Object.entries(counter)
+                        .sort((a, b) => b[1].count - a[1].count)
+                        .slice(0, 30);
+
+                    let html = `<div class="prob-summary">
+                        <div class="box"><div class="val">${totalNumbers.toLocaleString()}</div><div class="lbl">Tổng số lần</div></div>
+                        <div class="box"><div class="val">${Object.keys(counter).length}</div><div class="lbl">Số khác nhau</div></div>
+                        <div class="box"><div class="val">${allData.length}</div><div class="lbl">Ngày phân tích</div></div>
+                    </div>`;
+
+                    html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
+                        🎲 XÁC SUẤT 2 SỐ ${prizeLabel} — ${regionLabel.toUpperCase()}
+                    </h3>`;
+
+                    html += `<div style="overflow-x:auto;"><table class="prob-table">
+                        <thead><tr>
+                            <th>#</th><th>Số</th><th>Số lần</th><th>Xác suất</th><th>Ngày xuất hiện</th>
+                        </tr></thead><tbody>`;
+
+                    sorted.forEach(([num, info], i) => {
+                        const pct = (info.count / totalNumbers * 100).toFixed(2);
+                        const dates = Array.from(info.dates).sort()
+                            .map(d => d.split('-').reverse().join('/')).join(', ');
+                        html += `<tr>
+                            <td class="rank">${i + 1}</td>
+                            <td class="num-highlight">${num}</td>
+                            <td>${info.count}</td>
+                            <td class="percent">${pct}%</td>
+                            <td style="text-align:left; min-width:240px; white-space:normal; color:var(--cyan); font-size:0.78rem; line-height:1.7;">${dates}</td>
+                        </tr>`;
+                    });
+
+                    html += `</tbody></table></div>`;
+                    html += `<div style="text-align:center; margin-top:20px;">
+                        <button class="btn btn-orange" onclick='downloadProbabilityCSV(${JSON.stringify(sorted.map(([num, info]) => ({
+                            num, count: info.count,
+                            dates: Array.from(info.dates).sort().map(d => d.split('-').reverse().join('/')).join(', ')
+                        }))}, "xacsuat_${type}")'>📥 TẢI CSV</button>
+                    </div>`;
+
+                    probResult.innerHTML = html;
+                    showProbStatus('success', `HOÀN TẤT :: ${allData.length} NGÀY, ${totalNumbers.toLocaleString()} SỐ`);
                     btnAnalyze.disabled = false;
                     return;
                 }

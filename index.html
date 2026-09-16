@@ -195,6 +195,14 @@
         .date-form label::before, .prob-form label::before {
             content: '$ '; color: var(--green-dim);
         }
+        .weekday-display {
+            color: var(--yellow);
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.45);
+            white-space: nowrap;
+        }
+
         .date-form input[type="date"],
         .prob-form input[type="number"],
         .prob-form input[type="text"],
@@ -619,6 +627,7 @@
             <div class="date-form">
                                 <button type="button" class="date-nav-btn" id="prevDateBtn" onclick="changeDateBy(-1)" title="Ngày trước" aria-label="Ngày trước">‹</button>
                 <label for="dateInput">SELECT_DATE</label>
+                <span id="weekdayDisplay" class="weekday-display"></span>
                 <input type="date" id="dateInput" />
                 <button type="button" class="date-nav-btn" id="nextDateBtn" onclick="changeDateBy(1)" title="Ngày sau" aria-label="Ngày sau">›</button>
             </div>
@@ -736,7 +745,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.3
+            &nbsp;|&nbsp; VERSION 7.4
         </div>
     </div>
 
@@ -868,10 +877,32 @@
             return new Date(Date.UTC(vnTime.getUTCFullYear(), vnTime.getUTCMonth(), vnTime.getUTCDate())).toISOString().split('T')[0];
         }
 
+        const weekdayDisplay = document.getElementById('weekdayDisplay');
+
+        function updateWeekdayDisplay(isoDate) {
+            if (!isoDate || !weekdayDisplay) return;
+
+            const [y, m, d] = isoDate.split('-').map(Number);
+            const date = new Date(Date.UTC(y, m - 1, d));
+            const weekdays = [
+                'CHỦ NHẬT',
+                'THỨ HAI',
+                'THỨ BA',
+                'THỨ TƯ',
+                'THỨ NĂM',
+                'THỨ SÁU',
+                'THỨ BẢY'
+            ];
+
+            weekdayDisplay.textContent = `[ ${weekdays[date.getUTCDay()]} ]`;
+        }
+
         const todayIso = getDefaultDateVN();
         const realTodayVN = getRealTodayVN();
         dateInput.value = todayIso;
         currentIsoDate = todayIso;
+        updateWeekdayDisplay(todayIso);
+
 
         function showStatus(type, msg) {
             statusBox.className = 'status ' + type;
@@ -893,8 +924,14 @@
             ].join('-');
 
             dateInput.value = nextIso;
+            updateWeekdayDisplay(nextIso);
             loadResult(nextIso);
         }
+        dateInput.addEventListener('change', () => {
+            updateWeekdayDisplay(dateInput.value);
+            loadResult(dateInput.value);
+        });
+
         function showProbStatus(type, msg) {
             probStatus.className = 'status ' + type;
             probStatus.textContent = msg;
@@ -956,6 +993,7 @@
 
         function selectDate(iso) {
             dateInput.value = iso;
+            updateWeekdayDisplay(iso);
             loadResult(iso);
             resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }

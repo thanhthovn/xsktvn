@@ -680,8 +680,7 @@
 
                 <label>LOẠI</label>
                 <select id="probType">
-                    <option value="2so">2 số đuôi — Tất cả giải</option>
-                    <option value="2so_db8">2 số đuôi — ĐB + G8</option>
+                    <option value="2so">2 số đuôi</option>
                     <option value="3so">3 số đuôi</option>
                     <option value="cap">Cặp số (MB)</option>
                     <option value="bo3">Bộ 3 số (MB)</option>
@@ -740,7 +739,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.7.2
+            &nbsp;|&nbsp; VERSION 7.8.5
         </div>
     </div>
 
@@ -1058,21 +1057,15 @@
 
             // Cặp số và Bộ 3 số chỉ áp dụng cho Miền Bắc.
             const mbOnlyTypes = new Set(['cap', 'bo3']);
-            const db8OnlyTypes = new Set(['2so_db8']);
 
             Array.from(probType.options).forEach(option => {
                 const isMbOnly = mbOnlyTypes.has(option.value);
                 option.hidden = isMbOnly && region !== 'bac';
                 option.disabled = isMbOnly && region !== 'bac';
-                option.hidden = (isMbOnly && region !== 'bac') || (db8OnlyTypes.has(option.value) && region === 'bac');
-                option.disabled = (isMbOnly && region !== 'bac') || (db8OnlyTypes.has(option.value) && region === 'bac');
             });
 
             // Khi chuyển khỏi Miền Bắc, tự động chuyển về loại hợp lệ.
             if (region !== 'bac' && mbOnlyTypes.has(currentType)) {
-                probType.value = '2so';
-            }
-            if (region === 'bac' && db8OnlyTypes.has(probType.value)) {
                 probType.value = '2so';
             }
 
@@ -1148,40 +1141,6 @@
             return allData;
         }
 
-        function analyzeSpecialAndG8(allData, regionKey, stationFilter) {
-            const counter = {};
-            let totalNumbers = 0;
-            allData.forEach(day => {
-                day.regions.forEach(r => {
-                    if (r.key !== regionKey) return;
-                    r.stations.forEach(st => {
-                        if (stationFilter && stationFilter !== 'all' && st.name.trim() !== stationFilter) return;
-                        st.prizes.forEach(p => {
-                            if (p.label !== 'Giải ĐB' && p.label !== 'Giải 8') return;
-                            p.numbers.forEach(num => {
-                                if (num.length < 2) return;
-                                const tail = num.slice(-2);
-                                if (!counter[tail]) counter[tail] = { count: 0, dates: new Set() };
-                                counter[tail].count++;
-                                counter[tail].dates.add(day.date);
-
-                                // Lưu giải mà số này xuất hiện trong từng ngày
-                                if (!counter[tail].datePrizes[day.date]) {
-                                    counter[tail].datePrizes[day.date] = new Set();
-                                }
-                                if (p.label) {
-                                    counter[tail].datePrizes[day.date].add(p.label);
-                                }
-
-                                totalNumbers++;
-                            });
-                        });
-                    });
-                });
-            });
-            return { counter, totalNumbers };
-        }
-
         function analyzeTails(allData, regionKey, tailLen, stationFilter) {
             const counter = {};
             let totalNumbers = 0;
@@ -1204,8 +1163,7 @@
                                 if (!counter[tail]) {
                                     counter[tail] = {
                                         count: 0,
-                                        dates: new Set(),
-                                        datePrizes: {}
+                                        dates: new Set()
                                     };
                                 }
 
@@ -1283,13 +1241,7 @@
                 const pct = (count / totalNumbers * 100).toFixed(2);
                 const dates = Array.from(info.dates)
                     .sort()
-                    .map(d => {
-                        const dateLabel = d.split('-').reverse().join('/');
-                        const prizes = info.datePrizes && info.datePrizes[d]
-                            ? Array.from(info.datePrizes[d]).join(', ')
-                            : '';
-                        return prizes ? `${dateLabel} (${prizes})` : dateLabel;
-                    });
+                    .map(d => d.split('-').reverse().join('/'));
 
                 const dateText = dates.length > 0 ? dates.join(', ') : '-';
 
@@ -1311,13 +1263,7 @@
                 count: info.count,
                 dates: Array.from(info.dates)
                     .sort()
-                    .map(d => {
-                        const dateLabel = d.split('-').reverse().join('/');
-                        const prizes = info.datePrizes && info.datePrizes[d]
-                            ? Array.from(info.datePrizes[d]).join(', ')
-                            : '';
-                        return prizes ? `${dateLabel} (${prizes})` : dateLabel;
-                    })
+                    .map(d => d.split('-').reverse().join('/'))
                     .join(', ')
             }));
 
@@ -1478,7 +1424,7 @@
                     return;
                 }
 
-                const tailLen = (type === '2so' || type === '2so_db8') ? 2 : 3;
+                const tailLen = type === '2so' ? 2 : 3;
                 showProbStatus('loading', 'ĐANG TẢI DỮ LIỆU...');
                 const allData = await loadDaysData();
                 if (allData.length === 0) {
@@ -1490,10 +1436,7 @@
                 showProbStatus('loading', 'ĐANG TÍNH TOÁN...');
                 await new Promise(r => setTimeout(r, 50));
 
-                const analysis = type === '2so_db8'
-                    ? analyzeSpecialAndG8(allData, region, stationFilter)
-                    : analyzeTails(allData, region, tailLen, stationFilter);
-                const { counter, totalNumbers } = analysis;
+                const { counter, totalNumbers } = analyzeTails(allData, region, tailLen, stationFilter);
                 if (totalNumbers === 0) {
                     showProbStatus('error', 'KHÔNG CÓ SỐ NÀO');
                     btnAnalyze.disabled = false;
@@ -1504,12 +1447,11 @@
                 const regionLabel = stationFilter && stationFilter !== 'all'
                     ? `${stationFilter} (${regionNames[region]})`
                     : regionNames[region];
-                const resultLabel = type === '2so_db8' ? `${regionLabel} — GIẢI ĐB + GIẢI 8` : regionLabel;
 
                 const firstDate = allData[allData.length - 1].date;
                 const lastDate = allData[0].date;
 
-                probResult.innerHTML = renderTailResult(counter, totalNumbers, tailLen, resultLabel, allData.length, firstDate, lastDate);
+                probResult.innerHTML = renderTailResult(counter, totalNumbers, tailLen, regionLabel, allData.length, firstDate, lastDate);
                 showProbStatus('success', `HOÀN TẤT :: ${allData.length} NGÀY, ${totalNumbers.toLocaleString()} SỐ`);
                 btnAnalyze.disabled = false;
 

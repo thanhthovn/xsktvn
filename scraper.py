@@ -29,8 +29,10 @@ HEADERS = {
 OUTPUT_DIR = "data"
 
 # ============ KHOẢNG NGÀY CẦN CÀO ============
-# Khi chạy chương trình sẽ hỏi TỪ NGÀY và ĐẾN NGÀY.
-# Định dạng nhập: dd-mm-yyyy
+# TỰ SỬA 2 DÒNG NÀY KHI MUỐN ĐỔI KHOẢNG NGÀY
+# Định dạng: dd-mm-yyyy
+START_DATE = "01-09-2026"
+END_DATE = "15-09-2026"
 
 
 
@@ -353,43 +355,30 @@ def build_index():
 
 # ============ MAIN ============
 
-def input_date(prompt):
-    """Nhập ngày theo định dạng dd-mm-yyyy và kiểm tra hợp lệ."""
-    while True:
-        value = input(prompt).strip()
-
-        try:
-            return datetime.strptime(value, "%d-%m-%Y")
-        except ValueError:
-            print("✘ Ngày không hợp lệ. Vui lòng nhập theo dạng dd-mm-yyyy.")
-            print("  Ví dụ: 01-09-2026")
-
-
 def main():
     print("=" * 60)
     print("        CÀO KẾT QUẢ XỔ SỐ - MINHNGOC.NET")
     print("=" * 60)
-    print("Nhập khoảng ngày cần cào.")
-    print("Định dạng: dd-mm-yyyy")
-    print("Ví dụ: 01-09-2026 đến 15-09-2026")
-    print()
 
-    start_date = input_date("Từ ngày : ")
-    end_date = input_date("Đến ngày: ")
+    try:
+        start_date = datetime.strptime(START_DATE, "%d-%m-%Y")
+        end_date = datetime.strptime(END_DATE, "%d-%m-%Y")
+    except ValueError:
+        print("✘ Lỗi định dạng ngày.")
+        print("  Hãy dùng dạng dd-mm-yyyy")
+        print("  Ví dụ: START_DATE = \"01-09-2026\"")
+        return
 
     if start_date > end_date:
-        print()
-        print("✘ Lỗi: Từ ngày phải nhỏ hơn hoặc bằng Đến ngày.")
+        print("✘ Lỗi: START_DATE phải nhỏ hơn hoặc bằng END_DATE.")
         return
 
     total_days = (end_date - start_date).days + 1
 
-    print()
+    print(f"→ Từ ngày : {START_DATE}")
+    print(f"→ Đến ngày: {END_DATE}")
+    print(f"→ Tổng số ngày cần xử lý: {total_days}")
     print("-" * 60)
-    print(f"→ Khoảng ngày: {start_date.strftime('%d-%m-%Y')} → {end_date.strftime('%d-%m-%Y')}")
-    print(f"→ Tổng số ngày: {total_days}")
-    print("-" * 60)
-    print()
 
     current = start_date
     success_count = 0
@@ -419,7 +408,6 @@ def main():
                 else:
                     error_count += 1
 
-                # Nghỉ giữa các request để tránh gửi quá nhanh.
                 if current < end_date:
                     time.sleep(1.5)
 

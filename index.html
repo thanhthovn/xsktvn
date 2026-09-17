@@ -740,7 +740,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.8.6
+            &nbsp;|&nbsp; VERSION 7.8.8
         </div>
     </div>
 
@@ -1150,9 +1150,10 @@
         // Cách tính xác suất giữ nguyên công thức 02 số đuôi hiện tại:
         //     xác suất = số lần xuất hiện / tổng số lần * 100%
         // ============================================================
-        function analyzeTailsDBG8MTMN(allData) {
+        function analyzeTailsDBG8MTMN(allData, stationFilter = 'all') {
             const counter = {};
             let totalNumbers = 0;
+            const analyzedDays = new Set();
 
             // Luôn có đủ 00 -> 99 trong bảng kết quả.
             for (let i = 0; i <= 99; i++) {
@@ -1169,6 +1170,9 @@
                     if (r.key !== 'nam' && r.key !== 'trung') return;
 
                     r.stations.forEach(st => {
+                        // Nếu chọn từng đài: CHỈ lấy đúng đài đó.
+                        if (stationFilter && stationFilter !== 'all' && st.name.trim() !== stationFilter.trim()) return;
+
                         st.prizes.forEach(p => {
                             // Cấu trúc hiện tại dùng p.label và Giải ĐB.
                             // Chỉ lấy đúng 2 giải cần phân tích.
@@ -1184,13 +1188,14 @@
                                 counter[tail].count++;
                                 counter[tail].dates.add(day.date);
                                 totalNumbers++;
+                                analyzedDays.add(day.date);
                             });
                         });
                     });
                 });
             });
 
-            return { counter, totalNumbers };
+            return { counter, totalNumbers, analyzedDays };
         }
 
         function analyzeTails(allData, regionKey, tailLen, stationFilter) {
@@ -1278,7 +1283,6 @@
                 <table class="prob-table">
                     <thead>
                         <tr>
-                            <th>#</th>
                             <th>Số</th>
                             <th>Số lần</th>
                             <th>Xác suất</th>
@@ -1298,7 +1302,6 @@
                 const dateText = dates.length > 0 ? dates.join(', ') : '-';
 
                 html += `<tr>
-                    <td class="rank">${i + 1}</td>
                     <td class="num-highlight">${num}</td>
                     <td>${count}</td>
                     <td class="percent">${pct}%</td>
@@ -1435,7 +1438,7 @@
 
                     showProbStatus('loading', 'ĐANG TÍNH 02 SỐ ĐUÔI — ĐB + G8 (MT + MN)...');
 
-                    const { counter, totalNumbers } = analyzeTailsDBG8MTMN(allData);
+                    const { counter, totalNumbers, analyzedDays } = analyzeTailsDBG8MTMN(allData, stationFilter);
 
                     if (totalNumbers === 0) {
                         showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐB + G8 CỦA MIỀN TRUNG / MIỀN NAM');
@@ -1443,8 +1446,10 @@
                         return;
                     }
 
-                    const firstDate = allData[allData.length - 1].date;
-                    const lastDate = allData[0].date;
+                    const analyzedDateList = Array.from(analyzedDays).sort();
+                    const firstDate = analyzedDateList[0];
+                    const lastDate = analyzedDateList[analyzedDateList.length - 1];
+                    const analyzedDaysCount = analyzedDateList.length;
 
                     // Dùng lại bảng kết quả hiện tại để giao diện và cách tính
                     // hiển thị thống nhất với công thức 02 số đuôi cũ.
@@ -1453,14 +1458,14 @@
                         totalNumbers,
                         2,
                         'ĐB + G8 (Miền Trung + Miền Nam)',
-                        allData.length,
+                        analyzedDaysCount,
                         firstDate,
                         lastDate
                     );
 
                     showProbStatus(
                         'success',
-                        `HOÀN TẤT :: ${allData.length} NGÀY, ${totalNumbers.toLocaleString()} SỐ — ĐB + G8 MT + MN`
+                        `HOÀN TẤT :: ${analyzedDaysCount} NGÀY, ${totalNumbers.toLocaleString()} SỐ — ĐB + G8 MT + MN${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`
                     );
                     btnAnalyze.disabled = false;
                     return;

@@ -1,0 +1,578 @@
+{
+  "regions": [
+    {
+      "key": "nam",
+      "name": "MIỀN NAM",
+      "stations": [
+        {
+          "name": "TP. HCM",
+          "code": "XSHCM - 4E7",
+          "prizes": [
+            {
+              "label": "Giải tám",
+              "numbers": [
+                "60"
+              ]
+            },
+            {
+              "label": "Giải bảy",
+              "numbers": [
+                "766"
+              ]
+            },
+            {
+              "label": "Giải sáu",
+              "numbers": [
+                "8980",
+                "8434",
+                "4961"
+              ]
+            },
+            {
+              "label": "Giải năm",
+              "numbers": [
+                "2410"
+              ]
+            },
+            {
+              "label": "Giải tư",
+              "numbers": [
+                "01130",
+                "13188",
+                "17130",
+                "99230",
+                "47226",
+                "85071",
+                "94520"
+              ]
+            },
+            {
+              "label": "Giải ba",
+              "numbers": [
+                "18409",
+                "86498"
+              ]
+            },
+            {
+              "label": "Giải nhì",
+              "numbers": [
+                "20495"
+              ]
+            },
+            {
+              "label": "Giải nhất",
+              "numbers": [
+                "68556"
+              ]
+            },
+            {
+              "label": "Giải ĐB",
+              "numbers": [
+                "356255"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Long An",
+          "code": "XSLA - 4K5",
+          "prizes": [
+            {
+              "label": "Giải tám",
+              "numbers": [
+                "20"
+              ]
+            },
+            {
+              "label": "Giải bảy",
+              "numbers": [
+                "246"
+              ]
+            },
+            {
+              "label": "Giải sáu",
+              "numbers": [
+                "3287",
+                "9108",
+                "9057"
+              ]
+            },
+            {
+              "label": "Giải năm",
+              "numbers": [
+                "3626"
+              ]
+            },
+            {
+              "label": "Giải tư",
+              "numbers": [
+                "16082",
+                "67755",
+                "98155",
+                "68384",
+                "15922",
+                "34818",
+                "92005"
+              ]
+            },
+            {
+              "label": "Giải ba",
+              "numbers": [
+                "59960",
+                "06638"
+              ]
+            },
+            {
+              "label": "Giải nhì",
+              "numbers": [
+                "10754"
+              ]
+            },
+            {
+              "label": "Giải nhất",
+              "numbers": [
+                "49181"
+              ]
+            },
+            {
+              "label": "Giải ĐB",
+              "numbers": [
+                "996045"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Bình Phước",
+          "code": "XSBP - 4K5-N23",
+          "prizes": [
+            {
+              "label": "Giải tám",
+              "numbers": [
+                "12"
+              ]
+            },
+            {
+              "label": "Giải bảy",
+              "numbers": [
+                "131"
+              ]
+            },
+            {
+              "label": "Giải sáu",
+              "numbers": [
+                "9843",
+                "1158",
+                "7804"
+              ]
+            },
+            {
+              "label": "Giải năm",
+              "numbers": [
+                "6585"
+              ]
+            },
+            {
+              "label": "Giải tư",
+              "numbers": [
+                "52471",
+                "22228",
+                "67622",
+                "72594",
+                "76010",
+                "28960",
+                "01451"
+              ]
+            },
+            {
+              "label": "Giải ba",
+              "numbers": [
+                "16820",
+                "07364"
+              ]
+            },
+            {
+              "label": "Giải nhì",
+              "numbers": [
+                "03548"
+              ]
+            },
+            {
+              "label": "Giải nhất",
+              "numbers": [
+                "48528"
+              ]
+            },
+            {
+              "label": "Giải ĐB",
+              "numbers": [
+                "482282"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Hậu Giang",
+          "code": "XSHG - K5T4",
+          "prizes": [
+            {
+              "label": "Giải tám",
+              "numbers": [
+                "09"
+              ]
+            },
+            {
+              "label": "Giải bảy",
+              "numbers": [
+                "406"
+              ]
+            },
+            {
+              "label": "Giải sáu",
+              "numbers": [
+                "3454",
+                "3658",
+                "2355"
+              ]
+            },
+            {
+              "label": "Giải năm",
+              "numbers": [
+                "9001"
+              ]
+            },
+            {
+              "label": "Giải tư",
+              "numbers": [
+                "51690",
+                "80510",
+                "69637",
+                "48063",
+                "05309",
+                "40143",
+                "01502"
+              ]
+            },
+            {
+              "label": "Giải ba",
+              "numbers": [
+                "66474",
+                "55898"
+              ]
+            },
+            {
+              "label": "Giải nhì",
+              "numbers": [
+                "48958"
+              ]
+            },
+            {
+              "label": "Giải nhất",
+              "numbers": [
+                "72326"
+              ]
+            },
+            {
+              "label": "Giải ĐB",
+              "numbers": [
+                "338805"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "trung",
+      "name": "MIỀN TRUNG",
+      "stations": [
+        {
+          "name": "Đà Nẵng",
+          "code": "XSDNG",
+          "prizes": [
+            {
+              "label": "Giải tám",
+              "numbers": [
+                "73"
+              ]
+            },
+            {
+              "label": "Giải bảy",
+              "numbers": [
+                "479"
+              ]
+            },
+            {
+              "label": "Giải sáu",
+              "numbers": [
+                "8604",
+                "9962",
+                "6295"
+              ]
+            },
+            {
+              "label": "Giải năm",
+              "numbers": [
+                "8849"
+              ]
+            },
+            {
+              "label": "Giải tư",
+              "numbers": [
+                "75747",
+                "26669",
+                "11076",
+                "14824",
+                "42927",
+                "61334",
+                "68146"
+              ]
+            },
+            {
+              "label": "Giải ba",
+              "numbers": [
+                "32107",
+                "19897"
+              ]
+            },
+            {
+              "label": "Giải nhì",
+              "numbers": [
+                "77612"
+              ]
+            },
+            {
+              "label": "Giải nhất",
+              "numbers": [
+                "07748"
+              ]
+            },
+            {
+              "label": "Giải ĐB",
+              "numbers": [
+                "478364"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Quảng Ngãi",
+          "code": "XSQNG",
+          "prizes": [
+            {
+              "label": "Giải tám",
+              "numbers": [
+                "93"
+              ]
+            },
+            {
+              "label": "Giải bảy",
+              "numbers": [
+                "667"
+              ]
+            },
+            {
+              "label": "Giải sáu",
+              "numbers": [
+                "0850",
+                "7089",
+                "1823"
+              ]
+            },
+            {
+              "label": "Giải năm",
+              "numbers": [
+                "5697"
+              ]
+            },
+            {
+              "label": "Giải tư",
+              "numbers": [
+                "27915",
+                "14058",
+                "72177",
+                "84301",
+                "07784",
+                "43233",
+                "86128"
+              ]
+            },
+            {
+              "label": "Giải ba",
+              "numbers": [
+                "75885",
+                "86434"
+              ]
+            },
+            {
+              "label": "Giải nhì",
+              "numbers": [
+                "67134"
+              ]
+            },
+            {
+              "label": "Giải nhất",
+              "numbers": [
+                "26725"
+              ]
+            },
+            {
+              "label": "Giải ĐB",
+              "numbers": [
+                "662940"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Đắk Nông",
+          "code": "XSDNO",
+          "prizes": [
+            {
+              "label": "Giải tám",
+              "numbers": [
+                "52"
+              ]
+            },
+            {
+              "label": "Giải bảy",
+              "numbers": [
+                "068"
+              ]
+            },
+            {
+              "label": "Giải sáu",
+              "numbers": [
+                "4811",
+                "5196",
+                "8951"
+              ]
+            },
+            {
+              "label": "Giải năm",
+              "numbers": [
+                "3502"
+              ]
+            },
+            {
+              "label": "Giải tư",
+              "numbers": [
+                "37955",
+                "47563",
+                "66453",
+                "08993",
+                "36105",
+                "98599",
+                "13831"
+              ]
+            },
+            {
+              "label": "Giải ba",
+              "numbers": [
+                "53709",
+                "40532"
+              ]
+            },
+            {
+              "label": "Giải nhì",
+              "numbers": [
+                "02859"
+              ]
+            },
+            {
+              "label": "Giải nhất",
+              "numbers": [
+                "15517"
+              ]
+            },
+            {
+              "label": "Giải ĐB",
+              "numbers": [
+                "246421"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "bac",
+      "name": "MIỀN BẮC",
+      "stations": [
+        {
+          "name": "Nam Định",
+          "code": "12RX-13RX-9RX-3RX-7RX-6RX",
+          "prizes": [
+            {
+              "label": "Giải ĐB",
+              "numbers": [
+                "54639"
+              ]
+            },
+            {
+              "label": "Giải nhất",
+              "numbers": [
+                "71291"
+              ]
+            },
+            {
+              "label": "Giải nhì",
+              "numbers": [
+                "41698",
+                "59064"
+              ]
+            },
+            {
+              "label": "Giải ba",
+              "numbers": [
+                "63882",
+                "53656",
+                "95705",
+                "24224",
+                "25635",
+                "22662"
+              ]
+            },
+            {
+              "label": "Giải tư",
+              "numbers": [
+                "8260",
+                "0406",
+                "4970",
+                "2455"
+              ]
+            },
+            {
+              "label": "Giải năm",
+              "numbers": [
+                "1445",
+                "6930",
+                "6352",
+                "4790",
+                "5507",
+                "1824"
+              ]
+            },
+            {
+              "label": "Giải sáu",
+              "numbers": [
+                "123",
+                "603",
+                "919"
+              ]
+            },
+            {
+              "label": "Giải bảy",
+              "numbers": [
+                "91",
+                "31",
+                "29",
+                "21"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

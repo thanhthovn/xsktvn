@@ -27,8 +27,7 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-# ScrapDay: cào theo khoảng ngày do người dùng chọn.
-# Định dạng nhập: dd/mm/yyyy
+DAYS_TO_SCRAPE = 3
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============
@@ -348,117 +347,27 @@ def build_index():
     return index_path
 
 
-
-# ============ SCRAPDAY ============
-
-def parse_input_date(value):
-    """Chuyển ngày dd/mm/yyyy thành datetime."""
-    value = value.strip()
-    try:
-        return datetime.strptime(value, "%d/%m/%Y")
-    except ValueError:
-        raise ValueError(
-            f"Ngày không hợp lệ: {value!r}. "
-            "Vui lòng nhập đúng định dạng dd/mm/yyyy."
-        )
-
-
-def get_date_range():
-    """Nhập ngày bắt đầu và ngày kết thúc."""
-    while True:
-        try:
-            start_value = input("📅 Ngày bắt đầu (dd/mm/yyyy): ").strip()
-            start_date = parse_input_date(start_value)
-            break
-        except ValueError as e:
-            print(f"✘ {e}")
-
-    while True:
-        try:
-            end_value = input("📅 Ngày kết thúc (dd/mm/yyyy): ").strip()
-            end_date = parse_input_date(end_value)
-
-            if start_date > end_date:
-                print("✘ Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.")
-                continue
-
-            return start_date, end_date
-        except ValueError as e:
-            print(f"✘ {e}")
-
+# ============ MAIN ============
 
 def main():
-    print()
-    print("=" * 64)
-    print("                    SCRAPDAY")
-    print("             CÀO KẾT QUẢ THEO KHOẢNG NGÀY")
-    print("=" * 64)
-    print("Nhập ngày theo định dạng dd/mm/yyyy")
-    print()
-
-    start_date, end_date = get_date_range()
-    total_days = (end_date - start_date).days + 1
-
-    print()
-    print(f"▶ Từ ngày : {start_date.strftime('%d/%m/%Y')}")
-    print(f"▶ Đến ngày: {end_date.strftime('%d/%m/%Y')}")
-    print(f"▶ Tổng số ngày cần xử lý: {total_days}")
-    print("=" * 64)
-
-    current_date = start_date
-    success = 0
-    skipped = 0
-    failed = 0
-    position = 0
-
-    while current_date <= end_date:
-        position += 1
-
-        date_str = current_date.strftime("%d-%m-%Y")
-        iso = current_date.strftime("%Y-%m-%d")
-        year = current_date.strftime("%Y")
+    today = datetime.now()
+    for i in range(0, DAYS_TO_SCRAPE):
+        d = today - timedelta(days=i)
+        date_str = d.strftime("%d-%m-%Y")
+        iso = d.strftime("%Y-%m-%d")
+        year = d.strftime("%Y")
         path = os.path.join(OUTPUT_DIR, year, f"{iso}.json")
-
-        print()
-        print(f"[{position}/{total_days}] "
-              f"📅 {current_date.strftime('%d/%m/%Y')}")
-
         if os.path.exists(path):
-            print(f"   ⏭ Đã có: {path} - bỏ qua")
-            skipped += 1
-        else:
-            try:
-                result = scrape_date(date_str)
+            print(f"⏭ Đã có: {path} - bỏ qua")
+            continue
+        try:
+            scrape_date(date_str)
+            time.sleep(1.5)
+        except Exception as e:
+            print(f"✘ Lỗi ngày {date_str}: {e}")
+            time.sleep(3)
 
-                if result is not None:
-                    success += 1
-                    print("   ✔ Cào thành công")
-                else:
-                    failed += 1
-                    print("   ⚠ Không có dữ liệu để lưu")
-
-                # Nghỉ giữa các request.
-                time.sleep(1.5)
-
-            except Exception as e:
-                failed += 1
-                print(f"   ✘ Lỗi: {e}")
-                time.sleep(3)
-
-        current_date += timedelta(days=1)
-
-    # Cập nhật index sau khi cào xong toàn bộ khoảng ngày.
     build_index()
-
-    print()
-    print("=" * 64)
-    print("                     HOÀN TẤT")
-    print("=" * 64)
-    print(f"✔ Cào thành công : {success} ngày")
-    print(f"⏭ Đã có sẵn      : {skipped} ngày")
-    print(f"✘ Lỗi            : {failed} ngày")
-    print(f"📊 Tổng cộng      : {total_days} ngày")
-    print("=" * 64)
 
 
 if __name__ == "__main__":

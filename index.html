@@ -740,7 +740,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.8.8
+            &nbsp;|&nbsp; VERSION 7.8.9
         </div>
     </div>
 
@@ -1145,7 +1145,7 @@
         // ============================================================
         // CÔNG THỨC MỚI: 02 SỐ ĐUÔI — ĐB + G8 — MIỀN TRUNG + MIỀN NAM
         // Chỉ duyệt region.key = "nam" hoặc "trung"
-        // Chỉ lấy prize.label = "Giải ĐB" hoặc "Giải 8"
+        // Chỉ lấy prize.label = "Giải ĐB" hoặc "Giải tám"
         // Không tính Miền Bắc và không tính các giải khác.
         // Cách tính xác suất giữ nguyên công thức 02 số đuôi hiện tại:
         //     xác suất = số lần xuất hiện / tổng số lần * 100%
@@ -1176,7 +1176,7 @@
                         st.prizes.forEach(p => {
                             // Cấu trúc hiện tại dùng p.label và Giải ĐB.
                             // Chỉ lấy đúng 2 giải cần phân tích.
-                            if (p.label !== 'Giải ĐB' && p.label !== 'Giải 8') return;
+                            if (p.label !== 'Giải ĐB' && p.label !== 'Giải tám') return;
 
                             p.numbers.forEach(num => {
                                 const value = String(num).trim();

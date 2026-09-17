@@ -3,7 +3,7 @@
 scraper.py - Cào KQXS từ minhngoc.net
 Repo: xsktvn
 
-- Cào toàn bộ ngày trong khoảng START_DATE → END_DATE (bao gồm cả hai đầu).
+- Chỉ cào từ HÔM QUA lùi về xxx ngày (bỏ qua hôm nay).
 - Chỉ lấy box có NGÀY TRONG BOX khớp với ngày cần cào.
 - Lọc đài theo lịch xổ số của thứ trong tuần.
 - Miền Bắc: dùng tên đài từ lịch (vì HTML không có tên đài).
@@ -27,10 +27,8 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-# Khoảng ngày cần cào.
-# Để trống START_DATE / END_DATE nếu muốn chương trình hỏi khi chạy.
-START_DATE = ""
-END_DATE = ""
+# ScrapDay: cào theo khoảng ngày do người dùng chọn.
+# Định dạng nhập: dd/mm/yyyy
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============
@@ -350,12 +348,11 @@ def build_index():
     return index_path
 
 
-# ============ MAIN ============
+
+# ============ SCRAPDAY ============
 
 def parse_input_date(value):
-    """
-    Nhận ngày theo định dạng dd/mm/yyyy và trả về datetime.
-    """
+    """Chuyển ngày dd/mm/yyyy thành datetime."""
     value = value.strip()
     try:
         return datetime.strptime(value, "%d/%m/%Y")
@@ -367,102 +364,101 @@ def parse_input_date(value):
 
 
 def get_date_range():
-    """
-    Lấy ngày bắt đầu và ngày kết thúc.
-    Có thể cấu hình sẵn bằng START_DATE / END_DATE,
-    hoặc nhập trực tiếp khi chương trình chạy.
-    """
-    start_value = START_DATE.strip() if START_DATE else ""
-    end_value = END_DATE.strip() if END_DATE else ""
+    """Nhập ngày bắt đầu và ngày kết thúc."""
+    while True:
+        try:
+            start_value = input("📅 Ngày bắt đầu (dd/mm/yyyy): ").strip()
+            start_date = parse_input_date(start_value)
+            break
+        except ValueError as e:
+            print(f"✘ {e}")
 
-    if not start_value:
-        start_value = input("📅 Nhập ngày bắt đầu (dd/mm/yyyy): ").strip()
+    while True:
+        try:
+            end_value = input("📅 Ngày kết thúc (dd/mm/yyyy): ").strip()
+            end_date = parse_input_date(end_value)
 
-    if not end_value:
-        end_value = input("📅 Nhập ngày kết thúc (dd/mm/yyyy): ").strip()
+            if start_date > end_date:
+                print("✘ Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.")
+                continue
 
-    start_date = parse_input_date(start_value)
-    end_date = parse_input_date(end_value)
-
-    if start_date > end_date:
-        raise ValueError(
-            "Ngày bắt đầu không được lớn hơn ngày kết thúc."
-        )
-
-    return start_date, end_date
+            return start_date, end_date
+        except ValueError as e:
+            print(f"✘ {e}")
 
 
 def main():
-    print("=" * 60)
-    print("              XS CRAWLER - CÀO KẾT QUẢ XỔ SỐ")
-    print("=" * 60)
-    print("Nhập khoảng ngày cần cào theo định dạng: dd/mm/yyyy")
+    print()
+    print("=" * 64)
+    print("                    SCRAPDAY")
+    print("             CÀO KẾT QUẢ THEO KHOẢNG NGÀY")
+    print("=" * 64)
+    print("Nhập ngày theo định dạng dd/mm/yyyy")
     print()
 
-    try:
-        start_date, end_date = get_date_range()
-    except ValueError as e:
-        print(f"✘ {e}")
-        return
-
+    start_date, end_date = get_date_range()
     total_days = (end_date - start_date).days + 1
 
     print()
-    print(f"📅 Từ ngày : {start_date.strftime('%d/%m/%Y')}")
-    print(f"📅 Đến ngày: {end_date.strftime('%d/%m/%Y')}")
-    print(f"📊 Tổng số ngày: {total_days}")
-    print("=" * 60)
+    print(f"▶ Từ ngày : {start_date.strftime('%d/%m/%Y')}")
+    print(f"▶ Đến ngày: {end_date.strftime('%d/%m/%Y')}")
+    print(f"▶ Tổng số ngày cần xử lý: {total_days}")
+    print("=" * 64)
 
     current_date = start_date
-    completed = 0
+    success = 0
     skipped = 0
     failed = 0
+    position = 0
 
     while current_date <= end_date:
+        position += 1
+
         date_str = current_date.strftime("%d-%m-%Y")
         iso = current_date.strftime("%Y-%m-%d")
         year = current_date.strftime("%Y")
         path = os.path.join(OUTPUT_DIR, year, f"{iso}.json")
 
         print()
-        print(f"[{completed + skipped + failed + 1}/{total_days}] "
-              f"Đang xử lý: {current_date.strftime('%d/%m/%Y')}")
+        print(f"[{position}/{total_days}] "
+              f"📅 {current_date.strftime('%d/%m/%Y')}")
 
         if os.path.exists(path):
-            print(f"⏭ Đã có dữ liệu: {path} - bỏ qua")
+            print(f"   ⏭ Đã có: {path} - bỏ qua")
             skipped += 1
         else:
             try:
                 result = scrape_date(date_str)
+
                 if result is not None:
-                    completed += 1
-                    print(f"✔ Hoàn tất ngày {current_date.strftime('%d/%m/%Y')}")
+                    success += 1
+                    print("   ✔ Cào thành công")
                 else:
                     failed += 1
-                    print(f"⚠ Không có dữ liệu cho ngày "
-                          f"{current_date.strftime('%d/%m/%Y')}")
+                    print("   ⚠ Không có dữ liệu để lưu")
+
+                # Nghỉ giữa các request.
+                time.sleep(1.5)
+
             except Exception as e:
                 failed += 1
-                print(f"✘ Lỗi ngày {date_str}: {e}")
-
-            # Nghỉ giữa các request để tránh gửi quá dồn.
-            time.sleep(1.5 if failed == 0 else 3)
+                print(f"   ✘ Lỗi: {e}")
+                time.sleep(3)
 
         current_date += timedelta(days=1)
 
-    print()
-    print("=" * 60)
-    print("                    HOÀN TẤT")
-    print("=" * 60)
-    print(f"✔ Cào mới thành công : {completed} ngày")
-    print(f"⏭ Đã có sẵn          : {skipped} ngày")
-    print(f"✘ Lỗi/không có dữ liệu: {failed} ngày")
-    print(f"📊 Tổng số ngày       : {total_days}")
-    print("=" * 60)
-
+    # Cập nhật index sau khi cào xong toàn bộ khoảng ngày.
     build_index()
 
-
+    print()
+    print("=" * 64)
+    print("                     HOÀN TẤT")
+    print("=" * 64)
+    print(f"✔ Cào thành công : {success} ngày")
+    print(f"⏭ Đã có sẵn      : {skipped} ngày")
+    print(f"✘ Lỗi            : {failed} ngày")
+    print(f"📊 Tổng cộng      : {total_days} ngày")
+    print("=" * 64)
 
 
 if __name__ == "__main__":

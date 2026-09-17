@@ -27,7 +27,11 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 3
+
+# ============ KHOẢNG NGÀY CẦN CÀO ============
+# Khi chạy chương trình sẽ hỏi TỪ NGÀY và ĐẾN NGÀY.
+# Định dạng nhập: dd-mm-yyyy
+
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============
@@ -349,23 +353,94 @@ def build_index():
 
 # ============ MAIN ============
 
+def input_date(prompt):
+    """Nhập ngày theo định dạng dd-mm-yyyy và kiểm tra hợp lệ."""
+    while True:
+        value = input(prompt).strip()
+
+        try:
+            return datetime.strptime(value, "%d-%m-%Y")
+        except ValueError:
+            print("✘ Ngày không hợp lệ. Vui lòng nhập theo dạng dd-mm-yyyy.")
+            print("  Ví dụ: 01-09-2026")
+
+
 def main():
-    today = datetime.now()
-    for i in range(0, DAYS_TO_SCRAPE):
-        d = today - timedelta(days=i)
-        date_str = d.strftime("%d-%m-%Y")
-        iso = d.strftime("%Y-%m-%d")
-        year = d.strftime("%Y")
+    print("=" * 60)
+    print("        CÀO KẾT QUẢ XỔ SỐ - MINHNGOC.NET")
+    print("=" * 60)
+    print("Nhập khoảng ngày cần cào.")
+    print("Định dạng: dd-mm-yyyy")
+    print("Ví dụ: 01-09-2026 đến 15-09-2026")
+    print()
+
+    start_date = input_date("Từ ngày : ")
+    end_date = input_date("Đến ngày: ")
+
+    if start_date > end_date:
+        print()
+        print("✘ Lỗi: Từ ngày phải nhỏ hơn hoặc bằng Đến ngày.")
+        return
+
+    total_days = (end_date - start_date).days + 1
+
+    print()
+    print("-" * 60)
+    print(f"→ Khoảng ngày: {start_date.strftime('%d-%m-%Y')} → {end_date.strftime('%d-%m-%Y')}")
+    print(f"→ Tổng số ngày: {total_days}")
+    print("-" * 60)
+    print()
+
+    current = start_date
+    success_count = 0
+    skip_count = 0
+    error_count = 0
+
+    while current <= end_date:
+        date_str = current.strftime("%d-%m-%Y")
+        iso = current.strftime("%Y-%m-%d")
+        year = current.strftime("%Y")
         path = os.path.join(OUTPUT_DIR, year, f"{iso}.json")
+
+        print()
+        print("=" * 60)
+        print(f"ĐANG XỬ LÝ: {date_str}")
+        print("=" * 60)
+
         if os.path.exists(path):
             print(f"⏭ Đã có: {path} - bỏ qua")
-            continue
-        try:
-            scrape_date(date_str)
-            time.sleep(1.5)
-        except Exception as e:
-            print(f"✘ Lỗi ngày {date_str}: {e}")
-            time.sleep(3)
+            skip_count += 1
+        else:
+            try:
+                data = scrape_date(date_str)
+
+                if data:
+                    success_count += 1
+                else:
+                    error_count += 1
+
+                # Nghỉ giữa các request để tránh gửi quá nhanh.
+                if current < end_date:
+                    time.sleep(1.5)
+
+            except Exception as e:
+                print(f"✘ Lỗi ngày {date_str}: {e}")
+                error_count += 1
+
+                if current < end_date:
+                    time.sleep(3)
+
+        current += timedelta(days=1)
+
+    print()
+    print("=" * 60)
+    print("HOÀN TẤT")
+    print("=" * 60)
+    print(f"→ Tổng số ngày      : {total_days}")
+    print(f"→ Cào thành công    : {success_count}")
+    print(f"→ Đã có, bỏ qua     : {skip_count}")
+    print(f"→ Lỗi/không dữ liệu : {error_count}")
+    print("=" * 60)
 
     build_index()
 

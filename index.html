@@ -681,6 +681,7 @@
                 <label>LOẠI</label>
                 <select id="probType">
                     <option value="2so">2 số đuôi</option>
+                    <option value="2so_dbg8_mtmn">2 số đuôi — ĐB + G8 (MT + MN)</option>
                     <option value="3so">3 số đuôi</option>
                     <option value="cap">Cặp số (MB)</option>
                     <option value="bo3">Bộ 3 số (MB)</option>
@@ -739,7 +740,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.8.5
+            &nbsp;|&nbsp; VERSION 7.8.6
         </div>
     </div>
 
@@ -1141,6 +1142,57 @@
             return allData;
         }
 
+        // ============================================================
+        // CÔNG THỨC MỚI: 02 SỐ ĐUÔI — ĐB + G8 — MIỀN TRUNG + MIỀN NAM
+        // Chỉ duyệt region.key = "nam" hoặc "trung"
+        // Chỉ lấy prize.label = "Giải ĐB" hoặc "Giải 8"
+        // Không tính Miền Bắc và không tính các giải khác.
+        // Cách tính xác suất giữ nguyên công thức 02 số đuôi hiện tại:
+        //     xác suất = số lần xuất hiện / tổng số lần * 100%
+        // ============================================================
+        function analyzeTailsDBG8MTMN(allData) {
+            const counter = {};
+            let totalNumbers = 0;
+
+            // Luôn có đủ 00 -> 99 trong bảng kết quả.
+            for (let i = 0; i <= 99; i++) {
+                const tail = String(i).padStart(2, '0');
+                counter[tail] = {
+                    count: 0,
+                    dates: new Set()
+                };
+            }
+
+            allData.forEach(day => {
+                day.regions.forEach(r => {
+                    // Chỉ Miền Nam và Miền Trung.
+                    if (r.key !== 'nam' && r.key !== 'trung') return;
+
+                    r.stations.forEach(st => {
+                        st.prizes.forEach(p => {
+                            // Cấu trúc hiện tại dùng p.label và Giải ĐB.
+                            // Chỉ lấy đúng 2 giải cần phân tích.
+                            if (p.label !== 'Giải ĐB' && p.label !== 'Giải 8') return;
+
+                            p.numbers.forEach(num => {
+                                const value = String(num).trim();
+                                if (value.length < 2) return;
+
+                                const tail = value.slice(-2);
+                                if (!/^\d{2}$/.test(tail)) return;
+
+                                counter[tail].count++;
+                                counter[tail].dates.add(day.date);
+                                totalNumbers++;
+                            });
+                        });
+                    });
+                });
+            });
+
+            return { counter, totalNumbers };
+        }
+
         function analyzeTails(allData, regionKey, tailLen, stationFilter) {
             const counter = {};
             let totalNumbers = 0;
@@ -1368,6 +1420,52 @@
             probResult.innerHTML = '';
 
             try {
+                // ========================================================
+                // CÔNG THỨC MỚI: 02 SỐ ĐUÔI - ĐB + G8 - MT + MN
+                // ========================================================
+                if (type === '2so_dbg8_mtmn') {
+                    showProbStatus('loading', 'ĐANG TẢI DỮ LIỆU...');
+                    const allData = await loadDaysData();
+
+                    if (allData.length === 0) {
+                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    showProbStatus('loading', 'ĐANG TÍNH 02 SỐ ĐUÔI — ĐB + G8 (MT + MN)...');
+
+                    const { counter, totalNumbers } = analyzeTailsDBG8MTMN(allData);
+
+                    if (totalNumbers === 0) {
+                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐB + G8 CỦA MIỀN TRUNG / MIỀN NAM');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    const firstDate = allData[allData.length - 1].date;
+                    const lastDate = allData[0].date;
+
+                    // Dùng lại bảng kết quả hiện tại để giao diện và cách tính
+                    // hiển thị thống nhất với công thức 02 số đuôi cũ.
+                    probResult.innerHTML = renderTailResult(
+                        counter,
+                        totalNumbers,
+                        2,
+                        'ĐB + G8 (Miền Trung + Miền Nam)',
+                        allData.length,
+                        firstDate,
+                        lastDate
+                    );
+
+                    showProbStatus(
+                        'success',
+                        `HOÀN TẤT :: ${allData.length} NGÀY, ${totalNumbers.toLocaleString()} SỐ — ĐB + G8 MT + MN`
+                    );
+                    btnAnalyze.disabled = false;
+                    return;
+                }
+
                 if (type === 'cap' || type === 'bo3') {
                     if (region !== 'bac') {
                         showProbStatus('error', 'CHỈ HỖ TRỢ MIỀN BẮC CHO CẶP/BỘ 3');

@@ -34,8 +34,8 @@ OUTPUT_DIR = os.path.join(
 # ============ KHOẢNG NGÀY CẦN CÀO ============
 # TỰ SỬA 2 DÒNG NÀY KHI MUỐN ĐỔI KHOẢNG NGÀY
 # Định dạng: dd-mm-yyyy
-START_DATE = "24-12-2024"
-END_DATE = "27-12-2024"
+START_DATE = "28-12-2024"
+END_DATE = "29-12-2024"
 
 
 

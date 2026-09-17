@@ -740,7 +740,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.8.9
+            &nbsp;|&nbsp; VERSION 7.9.0
         </div>
     </div>
 
@@ -1174,9 +1174,18 @@
                         if (stationFilter && stationFilter !== 'all' && st.name.trim() !== stationFilter.trim()) return;
 
                         st.prizes.forEach(p => {
-                            // Cấu trúc hiện tại dùng p.label và Giải ĐB.
-                            // Chỉ lấy đúng 2 giải cần phân tích.
-                            if (p.label !== 'Giải ĐB' && p.label !== 'Giải tám') return;
+                            // JSON thực tế dùng nhãn: "Giải ĐB" và "Giải tám".
+                            // Chuẩn hóa khoảng trắng/chữ thường để tránh bỏ sót G8.
+                            const prizeLabel = String(p.label || '')
+                                .replace(/\s+/g, ' ')
+                                .trim()
+                                .toLowerCase();
+
+                            const isDB = prizeLabel === 'giải đb';
+                            const isG8 = prizeLabel === 'giải tám';
+
+                            // CHỈ lấy Giải ĐB + Giải tám. Không lấy giải khác.
+                            if (!isDB && !isG8) return;
 
                             p.numbers.forEach(num => {
                                 const value = String(num).trim();

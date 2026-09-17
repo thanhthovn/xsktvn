@@ -26,7 +26,10 @@ HEADERS = {
     )
 }
 
-OUTPUT_DIR = "data"
+OUTPUT_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "data"
+)
 
 # ============ KHOẢNG NGÀY CẦN CÀO ============
 # TỰ SỬA 2 DÒNG NÀY KHI MUỐN ĐỔI KHOẢNG NGÀY

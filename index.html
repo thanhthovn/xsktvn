@@ -741,7 +741,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 7.9.7
+            &nbsp;|&nbsp; VERSION 7.9.8
         </div>
     </div>
 
@@ -1053,6 +1053,26 @@
             }
         }
 
+        function updateProbabilityExtra() {
+            const region = probRegion.value;
+            const type = probType.value;
+            const needsExtra = region === 'bac' && (type === 'cap' || type === 'bo3');
+
+            // Với MB + Tất cả: ô nhập là TÙY CHỌN. Có thể chạy 2 số + 3 số
+            // mà không cần nhập cặp/bộ 3; nếu có nhập thì phân tích thêm loại tương ứng.
+            probExtraGroup.style.display = needsExtra || (region === 'bac' && type === 'all') ? '' : 'none';
+
+            if (region === 'bac' && type === 'all') {
+                probExtra.placeholder = 'Tùy chọn: 23-53 hoặc 15-58-69';
+            } else if (type === 'cap') {
+                probExtra.placeholder = 'VD: 23-53, 15-68';
+            } else if (type === 'bo3') {
+                probExtra.placeholder = 'VD: 15-58-69, 12-34-56';
+            } else {
+                probExtra.placeholder = 'VD: 23-53 hoặc 15-58-69';
+            }
+        }
+
         function updateProbabilityTypes() {
             const region = probRegion.value;
             const currentType = probType.value;
@@ -1107,20 +1127,18 @@
 
         probRegion.addEventListener('change', () => {
             updateStationDropdown();
-            // Mỗi miền có một tập loại riêng; đổi miền => mặc định Tất cả.
             probType.value = 'all';
+            probExtra.value = '';
             updateProbabilityTypes();
+            updateProbabilityExtra();
         });
+
+        probType.addEventListener('change', updateProbabilityExtra);
+
         updateStationDropdown();
         probType.value = 'all';
         updateProbabilityTypes();
-
-        probType.addEventListener('change', updateProbabilityExtra);
-
-        probRegion.addEventListener('change', updateStationDropdown);
-        updateStationDropdown();
-
-        probType.addEventListener('change', updateProbabilityExtra);
+        updateProbabilityExtra();
 
         function getDatesToLoad() {
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
@@ -1529,15 +1547,24 @@
                         if (stationFilter && stationFilter !== 'all' && normalizeStationName(stationName) !== normalizeStationName(stationFilter)) return;
                         const scheduleOffset = detectScheduleOffset(day, 'bac');
                         if (!isScheduledStation('bac', stationName, day.date, scheduleOffset)) return;
+                        // MB: chỉ tính một kỳ hoàn chỉnh (27 số).
+                        // Không dùng số ngày/file làm mẫu số.
+                        const mbNumbers = [];
+                        (st.prizes || []).forEach(p => {
+                            (p.numbers || []).forEach(num => {
+                                const value = String(num).trim();
+                                if (/^\d+$/.test(value) && value.length >= 2) mbNumbers.push(value);
+                            });
+                        });
+                        if (mbNumbers.length !== EXPECTED_NUMBERS_PER_DRAW.bac) return;
+
                         const drawKey = `${day.date}|bac|${normalizeStationName(stationName)}`;
                         if (analyzedDraws.has(drawKey)) return;
                         analyzedDraws.add(drawKey);
                         hasEligibleStation = true;
-                        st.prizes.forEach(p => {
-                            (p.numbers || []).forEach(num => {
-                                const value = String(num).trim();
-                                if (value.length >= 2 && /^\d+$/.test(value)) allTails.add(value.slice(-2));
-                            });
+                        mbNumbers.forEach(num => {
+                            const value = String(num).trim();
+                            allTails.add(value.slice(-2));
                         });
                     });
                 });
@@ -1713,9 +1740,10 @@
                 }
             }
 
-            const needsCombos = region === 'bac' && (type === 'cap' || type === 'bo3' || type === 'all');
-            if (needsCombos && !probExtra.value.trim()) {
-                showProbStatus('error', type === 'all' ? 'VUI LÒNG NHẬP CẶP/BỘ 3 SỐ' : 'VUI LÒNG NHẬP SỐ');
+            // Cặp/Bộ 3 chỉ bắt buộc nhập số khi người dùng chọn riêng loại đó.
+            // Với MB + Tất cả, nhập số là tùy chọn; không nhập vẫn chạy 2 số + 3 số.
+            if (region === 'bac' && (type === 'cap' || type === 'bo3') && !probExtra.value.trim()) {
+                showProbStatus('error', 'VUI LÒNG NHẬP CẶP/BỘ 3 SỐ');
                 return;
             }
 
@@ -1774,7 +1802,7 @@
                 const parseCombos = (requestedType) => {
                     const raw = probExtra.value.trim();
                     const capCombos = [], bo3Combos = [], invalid = [];
-                    if (!raw) return { capCombos, bo3Combos, invalid: ['(trống)'] };
+                    if (!raw) return { capCombos, bo3Combos, invalid: [] };
 
                     for (const chunk of raw.split(',')) {
                         const parts = chunk.trim().split('-').map(p => p.trim()).filter(Boolean);
@@ -1822,7 +1850,7 @@
                         addTail(runTail(3), '🎯 3 SỐ ĐUÔI — MIỀN BẮC');
 
                         const parsed = parseCombos('all');
-                        if (parsed.invalid.length) {
+                        if (probExtra.value.trim() && parsed.invalid.length) {
                             showProbStatus('error', 'SAI ĐỊNH DẠNG CẶP/BỘ 3: ' + parsed.invalid.join(', '));
                             btnAnalyze.disabled = false;
                             return;

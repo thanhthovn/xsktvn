@@ -749,9 +749,9 @@
                     <option value="all">Tất cả</option>
                     <option value="2so">2 số đuôi</option>
                     <option value="3so">3 số đuôi</option>
-                    <option value="2so_dbg8_mtmn">ĐB + G8</option>
-                    <option value="cap">Cặp số</option>
-                    <option value="bo3">Bộ 3 số</option>
+                    <option value="2so_dbg8_mtmn">Đặc Biệt + Giải tám</option>
+                    <option value="cap">Cặp số đá</option>
+                    <option value="bo3">Đá vòng 03 cặp</option>
                 </select>
             </div>
 
@@ -1174,7 +1174,7 @@
                     const cardClass = isMain ? 'station-card main-station' : 'station-card';
                     html += `<div class="${cardClass}"><div class="station-header"><span class="station-name">${st.name}</span><span class="station-code">${st.code || ''}</span></div><table class="prize-table">`;
                     st.prizes.forEach(p => {
-                        const cls = p.label === 'Giải ĐB' ? 'prize-numbers special-prize' : 'prize-numbers';
+                        const cls = p.label === 'Giải Đặc Biệt' ? 'prize-numbers special-prize' : 'prize-numbers';
                         html += `<tr><td class="prize-label">${p.label}</td><td class="${cls}">${p.numbers.join(' &nbsp; ')}</td></tr>`;
                     });
                     html += `</table></div>`;
@@ -1240,7 +1240,7 @@
             const currentType = probType.value;
 
             // Loại hợp lệ:
-            // - Miền Nam / Miền Trung: Tất cả, 2 số, 3 số, ĐB + G8.
+            // - Miền Nam / Miền Trung: Tất cả, 2 số, 3 số, Đặc Biệt + Giải tám.
             // - Miền Bắc: Tất cả, 2 số, 3 số, Cặp, Bộ 3.
             const mtmnOnlyTypes = new Set(['2so_dbg8_mtmn']);
             const mbOnlyTypes = new Set(['cap', 'bo3']);
@@ -1611,7 +1611,7 @@
                         const drawKey = getProbabilityDrawKey(day, regionKey, station.name);
                         if (analyzedDraws.has(drawKey)) return;
 
-                        const tails = extractPrizeTails(station, ['Giải ĐB', 'Giải tám']);
+                        const tails = extractPrizeTails(station, ['Giải Đặc Biệt', 'Giải tám']);
                         const db = tails['giải đb'] || [];
                         const g8 = tails['giải tám'] || [];
                         if (db.length !== 1 || g8.length !== 1) return;
@@ -1772,7 +1772,7 @@
             </div>`;
 
             const size = combos[0].length;
-            const title = size === 2 ? '🎲 XÁC SUẤT CẶP SỐ — MIỀN BẮC' : '🎲 XÁC SUẤT BỘ 3 SỐ — MIỀN BẮC';
+            const title = size === 2 ? '🎲 XÁC SUẤT CẶP SỐ ĐÁ — MIỀN BẮC' : '🎲 XÁC SUẤT ĐÁ VÒNG 03 CẶP — MIỀN BẮC';
             html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">${title}</h3>`;
             html += `<table class="prob-table"><thead><tr><th>#</th><th>Bộ số</th><th>Số ngày cùng về</th><th>Xác suất</th></tr></thead><tbody>`;
 
@@ -1856,7 +1856,7 @@
             // Cặp/Bộ 3 chỉ bắt buộc nhập số khi người dùng chọn riêng loại đó.
             // Với MB + Tất cả, nhập số là tùy chọn; không nhập vẫn chạy 2 số + 3 số.
             if (region === 'bac' && (type === 'cap' || type === 'bo3') && !probExtra.value.trim()) {
-                showProbStatus('error', 'VUI LÒNG NHẬP CẶP/BỘ 3 SỐ');
+                showProbStatus('error', 'VUI LÒNG NHẬP SỐ ĐÁ ĐÔI/ĐÁ VÒNG');
                 return;
             }
 
@@ -1903,7 +1903,7 @@
                     return {
                         html: renderTailResult(
                             data.counter, data.totalNumbers, 2,
-                            'ĐB + G8 (Miền Trung + Miền Nam)',
+                            'Đặc Biệt + Giải tám (Miền Trung + Miền Nam)',
                             data.analyzedDays.size, dates[0], dates[dates.length - 1],
                             'Ngày có kỳ xổ', data.analyzedDraws.size, 'Tổng mẫu'
                         ),
@@ -1941,7 +1941,7 @@
                         addTail(runTail(2), '🎯 2 SỐ ĐUÔI');
                         addTail(runTail(3), '🎯 3 SỐ ĐUÔI');
                         const rDbg8 = runDBG8();
-                        if (rDbg8) addTail(rDbg8, '🎯 ĐB + G8');
+                        if (rDbg8) addTail(rDbg8, '🎯 ĐẶC BIỆT + GIẢI TÁM');
                     } else {
                         addTail(runTail(2), '🎯 2 SỐ ĐUÔI — MIỀN BẮC');
                         addTail(runTail(3), '🎯 3 SỐ ĐUÔI — MIỀN BẮC');
@@ -1955,8 +1955,8 @@
 
                         const rCap = runCombo(parsed.capCombos);
                         const rBo3 = runCombo(parsed.bo3Combos);
-                        if (rCap) addTail(rCap, '🎯 CẶP SỐ — MIỀN BẮC');
-                        if (rBo3) addTail(rBo3, '🎯 BỘ 3 SỐ — MIỀN BẮC');
+                        if (rCap) addTail(rCap, '🎯 CẶP SỐ ĐÁ — MIỀN BẮC');
+                        if (rBo3) addTail(rBo3, '🎯 ĐÁ VÒNG 03 CẶP — MIỀN BẮC');
                     }
 
                     if (!sections.length) {
@@ -1980,7 +1980,7 @@
                 if (type === '2so_dbg8_mtmn') {
                     const data = runDBG8();
                     if (!data) {
-                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐB + G8 CỦA MIỀN TRUNG / MIỀN NAM');
+                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐẶC BIỆT + GIẢI TÁM CỦA MIỀN TRUNG / MIỀN NAM');
                         btnAnalyze.disabled = false;
                         return;
                     }

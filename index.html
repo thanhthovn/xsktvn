@@ -809,7 +809,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 4.6.1
+            &nbsp;|&nbsp; VERSION 4.6.2
         </div>
     </div>
 
@@ -1605,31 +1605,125 @@
             const counter = createTailCounter(2);
             const analyzedDays = new Set();
             const analyzedDraws = new Set();
-            let totalNumbers = 0;
+
+            // Nhận diện giải linh hoạt:
+            // - Không phụ thuộc hoa/thường, dấu tiếng Việt hoặc khoảng trắng.
+            // - Chấp nhận các cách ghi như: "Đặc Biệt", "Giải Đặc Biệt",
+            //   "DB", "ĐB", "Giải 8", "Giải tám", "G8".
+            function normalizePrizeLabel(label) {
+                return String(label || '')
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/đ/g, 'd')
+                    .replace(/Đ/g, 'D')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .toLowerCase();
+            }
+
+            function getPrizeTails(station, type) {
+                const result = [];
+
+                (station?.prizes || []).forEach(prize => {
+                    const rawLabel = String(prize.label || '').trim();
+                    const label = normalizePrizeLabel(rawLabel);
+
+                    let matched = false;
+
+                    if (type === 'db') {
+                        matched =
+                            label.includes('giai dac biet') ||
+                            label === 'dac biet' ||
+                            label === 'db' ||
+                            label.includes('db ');
+                    }
+
+                    if (type === 'g8') {
+                        matched =
+                            label.includes('giai tam') ||
+                            label.includes('giai 8') ||
+                            label === 'g8' ||
+                            label.includes('g8 ');
+                    }
+
+                    if (!matched) return;
+
+                    (prize.numbers || []).forEach(num => {
+                        const value = String(num).trim();
+
+                        if (/^\d+$/.test(value) && value.length >= 2) {
+                            result.push(value.slice(-2));
+                        }
+                    });
+                });
+
+                return result;
+            }
 
             (allData || []).forEach(day => {
                 ['nam', 'trung'].forEach(regionKey => {
-                    getStationByRegion(day, regionKey, stationFilter).forEach(station => {
-                        const drawKey = getProbabilityDrawKey(day, regionKey, station.name);
+
+                    // ĐB + G8 chỉ cần dữ liệu thực tế trong JSON.
+                    // Không dùng detectScheduleOffset/getStationByRegion ở đây,
+                    // tránh loại bỏ kỳ hợp lệ do lịch đài hoặc ngày bị lệch.
+                    const region = (day.regions || [])
+                        .find(r => r.key === regionKey);
+
+                    if (!region) return;
+
+                    (region.stations || []).forEach(station => {
+                        const stationName = String(station.name || '').trim();
+                        if (!stationName) return;
+
+                        if (
+                            stationFilter !== 'all' &&
+                            normalizeStationName(stationName) !==
+                            normalizeStationName(stationFilter)
+                        ) return;
+
+                        const drawKey = getProbabilityDrawKey(
+                            day,
+                            regionKey,
+                            stationName
+                        );
+
                         if (analyzedDraws.has(drawKey)) return;
 
-                        const tails = extractPrizeTails(station, ['Giải Đặc Biệt', 'Giải tám']);
-                        const db = tails['giải đặc biệt'] || [];
-                        const g8 = tails['giải tám'] || [];
-                        if (db.length !== 1 || g8.length !== 1) return;
+                        const db = getPrizeTails(station, 'db');
+                        const g8 = getPrizeTails(station, 'g8');
+
+                        // Một kỳ hợp lệ khi có ít nhất 1 số ĐB và 1 số G8.
+                        if (db.length === 0 || g8.length === 0) return;
 
                         analyzedDraws.add(drawKey);
                         analyzedDays.add(day.date);
-                        [db[0], g8[0]].forEach(tail => {
+
+                        [...db, ...g8].forEach(tail => {
+                            if (!counter[tail]) {
+                                counter[tail] = {
+                                    count: 0,
+                                    dates: new Set()
+                                };
+                            }
+
                             counter[tail].count++;
                             counter[tail].dates.add(day.date);
-                            totalNumbers++;
                         });
                     });
                 });
             });
 
-            return { counter, totalNumbers, analyzedDays, analyzedDraws };
+            let totalNumbers = 0;
+            Object.values(counter).forEach(info => {
+                totalNumbers += info.count;
+            });
+
+            return {
+                counter,
+                totalNumbers,
+                analyzedDays,
+                analyzedDraws
+            };
         }
 
         function analyzeCombos(allData, combos, stationFilter = 'all') {

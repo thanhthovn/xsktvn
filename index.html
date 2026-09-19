@@ -809,7 +809,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 4.6.2
+            &nbsp;|&nbsp; VERSION 4.7.0
         </div>
     </div>
 
@@ -1432,7 +1432,7 @@
         }
 
         // ============================================================
-        // MODULE XÁC SUẤT v8.0.1
+        // MODULE XÁC SUẤT v8.0.2
         // ============================================================
         // Nguyên tắc chung:
         // 1) Một đài + một ngày = tối đa 1 kỳ hợp lệ.
@@ -1527,12 +1527,18 @@
         // Lấy TOÀN BỘ số của một kỳ xổ.
         // Không được lọc theo độ dài ở đây: khi phân tích 3 số, các giải có số 2 chữ số
         // (đặc biệt Giải tám) vẫn phải được tính vào mẫu số của cả kỳ.
-        function extractNumericNumbers(station) {
+        //
+        // minLength: độ dài tối thiểu của số cần lấy (mặc định 1).
+        //   - analyzeTails        -> minLength = 1 (lấy hết, để đếm đúng 18/27 mẫu)
+        //   - analyzeCombos (MB)  -> minLength = 2 (chỉ lấy số từ 2 chữ số trở lên)
+        function extractNumericNumbers(station, minLength = 1) {
             const numbers = [];
             (station?.prizes || []).forEach(prize => {
                 (prize.numbers || []).forEach(num => {
                     const value = String(num).trim();
-                    if (/^\d+$/.test(value)) numbers.push(value);
+                    if (/^\d+$/.test(value) && value.length >= minLength) {
+                        numbers.push(value);
+                    }
                 });
             });
             return numbers;
@@ -1568,6 +1574,7 @@
             const analyzedDays = new Set();
             const analyzedDraws = new Set();
             const expectedPerDraw = EXPECTED_NUMBERS_PER_DRAW[regionKey];
+            const suspiciousDraws = [];
             let totalNumbers = 0;
 
             (allData || []).forEach(day => {
@@ -1576,7 +1583,30 @@
                     if (analyzedDraws.has(drawKey)) return;
 
                     const numbers = extractNumericNumbers(station);
-                    if (numbers.length !== expectedPerDraw) return;
+
+                    // Cho phép lệch nhẹ (>= 90% mẫu chuẩn) để tránh mất cả kỳ
+                    // chỉ vì scraper thiếu 1-2 số. Nếu thiếu quá nhiều -> loại.
+                    const minAcceptable = Math.ceil(expectedPerDraw * 0.9);
+                    if (numbers.length < minAcceptable) {
+                        suspiciousDraws.push({
+                            date: day.date,
+                            region: regionKey,
+                            station: station.name,
+                            got: numbers.length,
+                            expected: expectedPerDraw
+                        });
+                        return;
+                    }
+
+                    if (numbers.length !== expectedPerDraw) {
+                        suspiciousDraws.push({
+                            date: day.date,
+                            region: regionKey,
+                            station: station.name,
+                            got: numbers.length,
+                            expected: expectedPerDraw
+                        });
+                    }
 
                     analyzedDraws.add(drawKey);
                     analyzedDays.add(day.date);
@@ -1597,7 +1627,8 @@
                 analyzedDays,
                 analyzedDraws,
                 expectedPerDraw,
-                expectedTotalNumbers: analyzedDraws.size * expectedPerDraw
+                expectedTotalNumbers: analyzedDraws.size * expectedPerDraw,
+                suspiciousDraws
             };
         }
 
@@ -1662,18 +1693,23 @@
 
             (allData || []).forEach(day => {
                 ['nam', 'trung'].forEach(regionKey => {
-
-                    // ĐB + G8 chỉ cần dữ liệu thực tế trong JSON.
-                    // Không dùng detectScheduleOffset/getStationByRegion ở đây,
-                    // tránh loại bỏ kỳ hợp lệ do lịch đài hoặc ngày bị lệch.
                     const region = (day.regions || [])
                         .find(r => r.key === regionKey);
 
                     if (!region) return;
 
+                    const offset = detectScheduleOffset(day, regionKey);
+
                     (region.stations || []).forEach(station => {
                         const stationName = String(station.name || '').trim();
                         if (!stationName) return;
+
+                        // Lọc theo lịch đài (nhất quán với analyzeTails).
+                        // Vẫn dựa vào dữ liệu JSON làm nguồn cuối cùng,
+                        // nhưng loại bỏ đài không đúng lịch để tránh nhiễu.
+                        if (!isScheduledStation(regionKey, stationName, day.date, offset)) {
+                            return;
+                        }
 
                         if (
                             stationFilter !== 'all' &&
@@ -1726,22 +1762,27 @@
             };
         }
 
-        function analyzeCombos(allData, combos, stationFilter = 'all') {
+        // regionKey mặc định 'bac' (chỉ MB hỗ trợ combo), nhưng để tham số
+        // hóa giúp mở rộng sau này và tránh hardcode.
+        function analyzeCombos(allData, combos, stationFilter = 'all', regionKey = 'bac') {
             const result = {};
             const analyzedDays = new Set();
             const analyzedDraws = new Set();
             combos.forEach(combo => { result[combo.join('-')] = { days: [], combo }; });
 
+            const expectedPerDraw = EXPECTED_NUMBERS_PER_DRAW[regionKey] || 27;
+
             (allData || []).forEach(day => {
                 const dayTails = new Set();
                 let hasEligibleDraw = false;
 
-                getStationByRegion(day, 'bac', stationFilter).forEach(station => {
-                    const drawKey = getProbabilityDrawKey(day, 'bac', station.name);
+                getStationByRegion(day, regionKey, stationFilter).forEach(station => {
+                    const drawKey = getProbabilityDrawKey(day, regionKey, station.name);
                     if (analyzedDraws.has(drawKey)) return;
 
+                    // minLength = 2: chỉ lấy số từ 2 chữ số trở lên.
                     const numbers = extractNumericNumbers(station, 2);
-                    if (numbers.length !== EXPECTED_NUMBERS_PER_DRAW.bac) return;
+                    if (numbers.length !== expectedPerDraw) return;
 
                     analyzedDraws.add(drawKey);
                     hasEligibleDraw = true;
@@ -1782,7 +1823,7 @@
             return { capCombos, bo3Combos, invalid };
         }
 
-        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate, periodLabel = 'Ngày phân tích', drawsCount = null, totalLabel = 'Tổng số lần') {
+        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate, periodLabel = 'Ngày phân tích', drawsCount = null, totalLabel = 'Tổng số lần', warningHtml = '') {
             // Chỉ hiển thị các số thực sự đã xuất hiện (count > 0).
             // Loại bỏ hoàn toàn các số 0 lần / 0%.
             const sorted = Object.entries(counter)
@@ -1800,6 +1841,10 @@
             html += `<div style="text-align:center; color:var(--green); margin:6px 0; font-size:0.78rem;">
                 🔢 MẪU SỐ = SỐ KỲ XỔ × SỐ MẪU/KỲ
             </div>`;
+
+            if (warningHtml) {
+                html += warningHtml;
+            }
 
             html += `<div style="text-align:center; color:var(--cyan); margin:10px 0; font-size:0.85rem;">
                 📅 TỪ ${firstDate.split('-').reverse().join('/')} ĐẾN ${lastDate.split('-').reverse().join('/')}
@@ -1894,16 +1939,6 @@
             return html;
         }
 
-        function downloadCSV(data, filename) {
-            let csv = "\uFEFF" + "STT,Số,Số lần\n";
-            data.forEach((item, i) => { csv += `${i + 1},${item[0]},${item[1]}\n`; });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename + '.csv';
-            link.click();
-        }
-
         function downloadProbabilityCSV(data, filename) {
             let csv = "\uFEFF" + "STT,Số,Số lần,Xác suất,Ngày xuất hiện\n";
 
@@ -1980,11 +2015,25 @@
                     const data = analyzeTails(allData, region, tailLen, stationFilter);
                     if (!data.totalNumbers) return null;
                     const dates = Array.from(data.analyzedDays).sort();
+
+                    // Cảnh báo nếu có kỳ bất thường (thiếu/thừa số).
+                    let warningHtml = '';
+                    if (data.suspiciousDraws && data.suspiciousDraws.length > 0) {
+                        const shown = data.suspiciousDraws.slice(0, 5);
+                        const more = data.suspiciousDraws.length - shown.length;
+                        warningHtml = `<div style="text-align:center; color:var(--orange-light); margin:8px 0; font-size:0.75rem; border:1px dashed var(--orange); padding:6px; border-radius:3px;">
+                            ⚠️ ${data.suspiciousDraws.length} KỲ CÓ SỐ MẪU BẤT THƯỜNG (bỏ qua nếu thiếu &gt;10%):
+                            ${shown.map(s => `${s.date.split('-').reverse().join('/')} ${s.station} (${s.got}/${s.expected})`).join(' • ')}
+                            ${more > 0 ? ` • ... và ${more} kỳ khác` : ''}
+                        </div>`;
+                    }
+
                     return {
                         html: renderTailResult(
                             data.counter, data.totalNumbers, tailLen, regionLabel,
                             data.analyzedDays.size, dates[0], dates[dates.length - 1],
-                            'Ngày có dữ liệu', data.drawsCount, 'Tổng số mẫu'
+                            'Ngày có dữ liệu', data.drawsCount, 'Tổng số mẫu',
+                            warningHtml
                         ),
                         drawsCount: data.drawsCount,
                         totalNumbers: data.totalNumbers
@@ -1996,10 +2045,15 @@
                     const data = analyzeTailsDBG8MTMN(allData, stationFilter);
                     if (!data.totalNumbers) return null;
                     const dates = Array.from(data.analyzedDays).sort();
+
+                    const dbg8Label = stationFilter && stationFilter !== 'all'
+                        ? `Đặc Biệt + Giải tám — ${stationFilter}`
+                        : 'Đặc Biệt + Giải tám (Miền Trung + Miền Nam)';
+
                     return {
                         html: renderTailResult(
                             data.counter, data.totalNumbers, 2,
-                            'Đặc Biệt + Giải tám (Miền Trung + Miền Nam)',
+                            dbg8Label,
                             data.analyzedDays.size, dates[0], dates[dates.length - 1],
                             'Ngày có kỳ xổ', data.analyzedDraws.size, 'Tổng mẫu'
                         ),
@@ -2013,7 +2067,7 @@
 
                 const runCombo = (combos) => {
                     if (!combos.length) return null;
-                    const data = analyzeCombos(allData, combos, stationFilter);
+                    const data = analyzeCombos(allData, combos, stationFilter, 'bac');
                     const drawsCount = data.analyzedDraws.size;
                     if (!drawsCount) return null;
                     return {

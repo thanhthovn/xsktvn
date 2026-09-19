@@ -809,7 +809,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 4.7.0
+            &nbsp;|&nbsp; VERSION 4.7.1
         </div>
     </div>
 
@@ -1432,7 +1432,7 @@
         }
 
         // ============================================================
-        // MODULE XÁC SUẤT v8.0.2
+        // MODULE XÁC SUẤT v8.0.3
         // ============================================================
         // Nguyên tắc chung:
         // 1) Một đài + một ngày = tối đa 1 kỳ hợp lệ.
@@ -1632,21 +1632,31 @@
             };
         }
 
+        // ============================================================
+        // PHÂN TÍCH ĐẶC BIỆT + GIẢI TÁM (MT + MN)
+        // ============================================================
+        // Nguyên tắc:
+        //   - ĐB + G8 lấy trực tiếp từ dữ liệu JSON thực tế.
+        //   - KHÔNG lọc theo lịch đài để tránh loại oan kỳ hợp lệ khi
+        //     detectScheduleOffset bị lệch (do thiếu region trong JSON).
+        //   - Nhận diện label giải linh hoạt:
+        //       DB: "Đặc Biệt", "Giải Đặc Biệt", "DB", "ĐB", "ĐB.", "D B"
+        //       G8: "Giải 8", "Giải Tám", "G8", "G.8", "G 8"
+        // ============================================================
         function analyzeTailsDBG8MTMN(allData, stationFilter = 'all') {
             const counter = createTailCounter(2);
             const analyzedDays = new Set();
             const analyzedDraws = new Set();
+            const debugSkipped = { noDb: 0, noG8: 0, wrongStation: 0 };
 
-            // Nhận diện giải linh hoạt:
-            // - Không phụ thuộc hoa/thường, dấu tiếng Việt hoặc khoảng trắng.
-            // - Chấp nhận các cách ghi như: "Đặc Biệt", "Giải Đặc Biệt",
-            //   "DB", "ĐB", "Giải 8", "Giải tám", "G8".
+            // Chuẩn hoá label: bỏ dấu tiếng Việt, dấu câu, khoảng trắng thừa.
             function normalizePrizeLabel(label) {
                 return String(label || '')
                     .normalize('NFD')
                     .replace(/[\u0300-\u036f]/g, '')
                     .replace(/đ/g, 'd')
                     .replace(/Đ/g, 'D')
+                    .replace(/[.\-_:]+/g, ' ')   // "G.8" -> "g 8"
                     .replace(/\s+/g, ' ')
                     .trim()
                     .toLowerCase();
@@ -1656,17 +1666,18 @@
                 const result = [];
 
                 (station?.prizes || []).forEach(prize => {
-                    const rawLabel = String(prize.label || '').trim();
-                    const label = normalizePrizeLabel(rawLabel);
+                    const label = normalizePrizeLabel(prize.label);
 
                     let matched = false;
 
                     if (type === 'db') {
                         matched =
                             label.includes('giai dac biet') ||
-                            label === 'dac biet' ||
+                            label.includes('dac biet') ||
                             label === 'db' ||
-                            label.includes('db ');
+                            label === 'd b' ||
+                            label.startsWith('db ') ||
+                            label.startsWith('d b ');
                     }
 
                     if (type === 'g8') {
@@ -1674,14 +1685,15 @@
                             label.includes('giai tam') ||
                             label.includes('giai 8') ||
                             label === 'g8' ||
-                            label.includes('g8 ');
+                            label === 'g 8' ||
+                            label.startsWith('g8 ') ||
+                            label.startsWith('g 8 ');
                     }
 
                     if (!matched) return;
 
                     (prize.numbers || []).forEach(num => {
                         const value = String(num).trim();
-
                         if (/^\d+$/.test(value) && value.length >= 2) {
                             result.push(value.slice(-2));
                         }
@@ -1693,55 +1705,39 @@
 
             (allData || []).forEach(day => {
                 ['nam', 'trung'].forEach(regionKey => {
-                    const region = (day.regions || [])
-                        .find(r => r.key === regionKey);
-
+                    const region = (day.regions || []).find(r => r.key === regionKey);
                     if (!region) return;
-
-                    const offset = detectScheduleOffset(day, regionKey);
 
                     (region.stations || []).forEach(station => {
                         const stationName = String(station.name || '').trim();
                         if (!stationName) return;
 
-                        // Lọc theo lịch đài (nhất quán với analyzeTails).
-                        // Vẫn dựa vào dữ liệu JSON làm nguồn cuối cùng,
-                        // nhưng loại bỏ đài không đúng lịch để tránh nhiễu.
-                        if (!isScheduledStation(regionKey, stationName, day.date, offset)) {
-                            return;
-                        }
-
                         if (
                             stationFilter !== 'all' &&
                             normalizeStationName(stationName) !==
                             normalizeStationName(stationFilter)
-                        ) return;
+                        ) {
+                            debugSkipped.wrongStation++;
+                            return;
+                        }
 
-                        const drawKey = getProbabilityDrawKey(
-                            day,
-                            regionKey,
-                            stationName
-                        );
-
+                        const drawKey = getProbabilityDrawKey(day, regionKey, stationName);
                         if (analyzedDraws.has(drawKey)) return;
 
                         const db = getPrizeTails(station, 'db');
                         const g8 = getPrizeTails(station, 'g8');
 
                         // Một kỳ hợp lệ khi có ít nhất 1 số ĐB và 1 số G8.
-                        if (db.length === 0 || g8.length === 0) return;
+                        if (db.length === 0) { debugSkipped.noDb++; return; }
+                        if (g8.length === 0) { debugSkipped.noG8++; return; }
 
                         analyzedDraws.add(drawKey);
                         analyzedDays.add(day.date);
 
                         [...db, ...g8].forEach(tail => {
                             if (!counter[tail]) {
-                                counter[tail] = {
-                                    count: 0,
-                                    dates: new Set()
-                                };
+                                counter[tail] = { count: 0, dates: new Set() };
                             }
-
                             counter[tail].count++;
                             counter[tail].dates.add(day.date);
                         });
@@ -1754,11 +1750,15 @@
                 totalNumbers += info.count;
             });
 
+            // Log debug để chẩn đoán khi cần.
+            console.log('[DBG8] analyzedDraws:', analyzedDraws.size, 'totalNumbers:', totalNumbers, 'debugSkipped:', debugSkipped);
+
             return {
                 counter,
                 totalNumbers,
                 analyzedDays,
-                analyzedDraws
+                analyzedDraws,
+                debugSkipped
             };
         }
 
@@ -2130,7 +2130,7 @@
                 if (type === '2so_dbg8_mtmn') {
                     const data = runDBG8();
                     if (!data) {
-                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐẶC BIỆT + GIẢI TÁM CỦA MIỀN TRUNG / MIỀN NAM');
+                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐẶC BIỆT + GIẢI TÁM CỦA MIỀN TRUNG / MIỀN NAM. XEM CONSOLE [DBG8] ĐỂ CHẨN ĐOÁN.');
                         btnAnalyze.disabled = false;
                         return;
                     }

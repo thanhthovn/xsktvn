@@ -27,7 +27,7 @@ HEADERS = {
 }
 
 OUTPUT_DIR = "data"
-DAYS_TO_SCRAPE = 3
+DAYS_TO_SCRAPE = 2
 
 
 # ============ LỊCH XỔ SỐ THEO THỨ ============
@@ -67,7 +67,6 @@ WEEKDAY_NAMES = [
     "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật",
 ]
 
-
 # ============ HÀM TIỆN ÍCH ============
 
 def fetch_html(date_str, max_retry=3):
@@ -84,7 +83,6 @@ def fetch_html(date_str, max_retry=3):
             time.sleep(5)
     raise Exception(f"Không tải được sau {max_retry} lần")
 
-
 def extract_numbers(td):
     divs = td.find_all("div", recursive=False)
     if not divs:
@@ -95,7 +93,6 @@ def extract_numbers(td):
         return [n for n in nums if n]
     return [d.get_text(strip=True) for d in divs if d.get_text(strip=True)]
 
-
 def normalize_name(name):
     name = name.lower().strip()
     name = uni_normalize("NFD", name)
@@ -103,7 +100,6 @@ def normalize_name(name):
     name = name.replace("đ", "d")
     name = re.sub(r"\s+", " ", name)
     return name
-
 
 def extract_station_prizes(rt):
     """Trích xuất 1 đài miền Nam/Trung từ table.rightcl."""
@@ -181,7 +177,6 @@ def extract_mien_bac_prizes(table, station_name):
         return None
 
     return {"name": name, "code": code, "prizes": prizes}
-
 
 # ============ PARSE TRANG ============
 
@@ -296,7 +291,6 @@ def parse_page(html, date_str):
 
     return {"regions": regions}
 
-
 # ============ LƯU / ĐỌC FILE ============
 
 def save_json(date_str, data):
@@ -346,7 +340,6 @@ def build_index():
     print(f"✔ Đã lưu index.json với {len(dates)} ngày")
     return index_path
 
-
 # ============ MAIN ============
 
 def main():
@@ -368,7 +361,6 @@ def main():
             time.sleep(3)
 
     build_index()
-
 
 if __name__ == "__main__":
     main()

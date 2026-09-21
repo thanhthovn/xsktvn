@@ -938,7 +938,13 @@
                 const res = await fetch(`data/index.json?_=${Date.now()}`);
                 if (!res.ok) throw new Error('index.json not found');
                 const data = await res.json();
-                availableDates = new Set(data.dates || []);
+
+                // Chỉ nhận mảng string ISO date hợp lệ.
+                const rawDates = Array.isArray(data.dates) ? data.dates : [];
+                availableDates = new Set(
+                    rawDates.filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+                );
+
                 document.getElementById('statTotal').textContent = data.total || 0;
                 document.getElementById('statUpdated').textContent = data.updated || '-';
                 statsBox.style.display = 'flex';
@@ -1094,18 +1100,13 @@
                 option.disabled = option.hidden;
             });
 
-            // Khi đổi miền, luôn đưa LOẠI về "Tất cả" để tránh giữ
-            // một loại chỉ hợp lệ ở miền trước.
-            if (
-                !['all', '2so', '3so'].includes(currentType) ||
-                (region === 'bac' && currentType === '2so_dbg8_mtmn')
-            ) {
+            // Chỉ reset về "Tất cả" khi loại hiện tại KHÔNG hợp lệ với miền đang chọn.
+            const isInvalid =
+                (mtmnOnlyTypes.has(currentType) && region === 'bac') ||
+                (mbOnlyTypes.has(currentType) && region !== 'bac');
+
+            if (isInvalid) {
                 probType.value = 'all';
-            } else {
-                // Nếu đang chuyển miền và loại hiện tại không hợp lệ thì về Tất cả.
-                if (region !== 'bac' && (currentType === 'cap' || currentType === 'bo3')) {
-                    probType.value = 'all';
-                }
             }
 
             updateProbabilityExtra();
@@ -1126,11 +1127,9 @@
         }
 
         probRegion.addEventListener('change', () => {
-            updateStationDropdown();
             probType.value = 'all';
             probExtra.value = '';
-            updateProbabilityTypes();
-            updateProbabilityExtra();
+            updateStationDropdown(); // đã bao gồm updateProbabilityTypes + updateProbabilityExtra
         });
 
         probType.addEventListener('change', updateProbabilityExtra);
@@ -1482,7 +1481,7 @@
                     const drawKey = getProbabilityDrawKey(day, 'bac', station.name);
                     if (analyzedDraws.has(drawKey)) return;
 
-                    const numbers = extractNumericNumbers(station, 2);
+                    const numbers = extractNumericNumbers(station);
                     if (numbers.length !== EXPECTED_NUMBERS_PER_DRAW.bac) return;
 
                     analyzedDraws.add(drawKey);

@@ -673,6 +673,17 @@
                     <option value="bac">Miền Bắc</option>
                 </select>
 
+                <label>THỨ</label>
+                <select id="probWeekday">
+                    <option value="all">Cả tuần</option>
+                    <option value="1">Thứ 2</option>
+                    <option value="2">Thứ 3</option>
+                    <option value="3">Thứ 4</option>
+                    <option value="4">Thứ 5</option>
+                    <option value="5">Thứ 6</option>
+                    <option value="6">Thứ 7</option>
+                </select>
+
                 <label>ĐÀI</label>
                 <select id="probStation">
                     <option value="all">Tất cả đài</option>
@@ -683,9 +694,9 @@
                     <option value="all">Tất cả</option>
                     <option value="2so">2 số đuôi</option>
                     <option value="3so">3 số đuôi</option>
-                    <option value="2so_dbg8_mtmn">Đầu Đuôi</option>
-                    <option value="cap">Cặp số Đá</option>
-                    <option value="bo3">03 cặp Đá vòng</option>
+                    <option value="2so_dbg8_mtmn">ĐB + G8</option>
+                    <option value="cap">Cặp số</option>
+                    <option value="bo3">Bộ 3 số</option>
                 </select>
             </div>
 
@@ -741,7 +752,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 5.3.3
+            &nbsp;|&nbsp; VERSION 7.9.9
         </div>
     </div>
 
@@ -785,6 +796,7 @@
         const probResult = document.getElementById('probResult');
         const probType = document.getElementById('probType');
         const probRegion = document.getElementById('probRegion');
+        const probWeekday = document.getElementById('probWeekday');
         const probStation = document.getElementById('probStation');
         const probDays = document.getElementById('probDays');
         const probExtra = document.getElementById('probExtra');
@@ -938,13 +950,7 @@
                 const res = await fetch(`data/index.json?_=${Date.now()}`);
                 if (!res.ok) throw new Error('index.json not found');
                 const data = await res.json();
-
-                // Chỉ nhận mảng string ISO date hợp lệ.
-                const rawDates = Array.isArray(data.dates) ? data.dates : [];
-                availableDates = new Set(
-                    rawDates.filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
-                );
-
+                availableDates = new Set(data.dates || []);
                 document.getElementById('statTotal').textContent = data.total || 0;
                 document.getElementById('statUpdated').textContent = data.updated || '-';
                 statsBox.style.display = 'flex';
@@ -1071,9 +1077,9 @@
             if (region === 'bac' && type === 'all') {
                 probExtra.placeholder = 'Tùy chọn: 23-53 hoặc 15-58-69';
             } else if (type === 'cap') {
-                probExtra.placeholder = 'VD: 23-53, 15-68 (Cặp số Đá)';
+                probExtra.placeholder = 'VD: 23-53, 15-68';
             } else if (type === 'bo3') {
-                probExtra.placeholder = 'VD: 15-58-69, 12-34-56 (03 cặp Đá vòng)';
+                probExtra.placeholder = 'VD: 15-58-69, 12-34-56';
             } else {
                 probExtra.placeholder = 'VD: 23-53 hoặc 15-58-69';
             }
@@ -1084,8 +1090,8 @@
             const currentType = probType.value;
 
             // Loại hợp lệ:
-            // - Miền Nam / Miền Trung: Tất cả, 2 số, 3 số, Đầu Đuôi.
-            // - Miền Bắc: Tất cả, 2 số, 3 số, Cặp số Đá, 03 cặp Đá vòng.
+            // - Miền Nam / Miền Trung: Tất cả, 2 số, 3 số, ĐB + G8.
+            // - Miền Bắc: Tất cả, 2 số, 3 số, Cặp, Bộ 3.
             const mtmnOnlyTypes = new Set(['2so_dbg8_mtmn']);
             const mbOnlyTypes = new Set(['cap', 'bo3']);
 
@@ -1100,13 +1106,18 @@
                 option.disabled = option.hidden;
             });
 
-            // Chỉ reset về "Tất cả" khi loại hiện tại KHÔNG hợp lệ với miền đang chọn.
-            const isInvalid =
-                (mtmnOnlyTypes.has(currentType) && region === 'bac') ||
-                (mbOnlyTypes.has(currentType) && region !== 'bac');
-
-            if (isInvalid) {
+            // Khi đổi miền, luôn đưa LOẠI về "Tất cả" để tránh giữ
+            // một loại chỉ hợp lệ ở miền trước.
+            if (
+                !['all', '2so', '3so'].includes(currentType) ||
+                (region === 'bac' && currentType === '2so_dbg8_mtmn')
+            ) {
                 probType.value = 'all';
+            } else {
+                // Nếu đang chuyển miền và loại hiện tại không hợp lệ thì về Tất cả.
+                if (region !== 'bac' && (currentType === 'cap' || currentType === 'bo3')) {
+                    probType.value = 'all';
+                }
             }
 
             updateProbabilityExtra();
@@ -1127,17 +1138,61 @@
         }
 
         probRegion.addEventListener('change', () => {
+            updateStationDropdown();
+            probWeekday.value = 'all';
             probType.value = 'all';
             probExtra.value = '';
-            updateStationDropdown(); // đã bao gồm updateProbabilityTypes + updateProbabilityExtra
+            updateProbabilityTypes();
+            updateProbabilityExtra();
         });
 
         probType.addEventListener('change', updateProbabilityExtra);
 
         updateStationDropdown();
+        probWeekday.value = 'all';
         probType.value = 'all';
         updateProbabilityTypes();
         updateProbabilityExtra();
+
+        // ============================================================
+        // LỌC DỮ LIỆU THEO THỨ
+        // ============================================================
+        // ISO date -> JavaScript weekday (UTC):
+        // 0 = Chủ nhật, 1 = Thứ 2, ..., 6 = Thứ 7.
+        // Dùng UTC để không bị lệch ngày do múi giờ.
+        function getWeekdayFromISO(isoDate) {
+            if (!isoDate) return null;
+
+            const parts = isoDate.split('-').map(Number);
+            if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+
+            const [year, month, day] = parts;
+            const date = new Date(Date.UTC(year, month - 1, day));
+            return date.getUTCDay();
+        }
+
+        function filterDataByWeekday(allData) {
+            const selectedWeekday = probWeekday.value;
+
+            // Cả tuần = không lọc.
+            if (selectedWeekday === 'all') return allData;
+
+            const weekday = Number(selectedWeekday);
+            return allData.filter(day => getWeekdayFromISO(day.date) === weekday);
+        }
+
+        function getWeekdayLabel(value) {
+            const labels = {
+                all: 'Cả tuần',
+                1: 'Thứ 2',
+                2: 'Thứ 3',
+                3: 'Thứ 4',
+                4: 'Thứ 5',
+                5: 'Thứ 6',
+                6: 'Thứ 7'
+            };
+            return labels[value] || 'Cả tuần';
+        }
 
         function getDatesToLoad() {
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
@@ -1266,26 +1321,16 @@
                 .toLowerCase();
         }
 
-        // ============================================================
-        // MODULE TÍNH TOÁN XÁC SUẤT
-        // ============================================================
-        // Nguyên tắc chung:
-        // 1) Một đài + một ngày = tối đa 1 kỳ hợp lệ.
-        // 2) Chỉ tính đài đúng lịch; dữ liệu thực tế trong JSON là điều kiện bắt buộc.
-        // 3) 2/3 số: MN/MT = 18 mẫu/kỳ, MB = 27 mẫu/kỳ.
-        // 4) Đầu Đuôi: đúng 2 mẫu/kỳ (1 ĐB + 1 G8).
-        // 5) Cặp số Đá / 03 cặp Đá vòng MB: 1 mẫu quan sát/kỳ.
-        // 6) Mọi công thức đều dùng cùng bộ lọc kỳ xổ để tránh lệch mẫu số.
-        // ============================================================
-
+        // Xác định thứ xổ thực tế của một file dữ liệu.
+        // Một số nguồn dữ liệu có thể đặt tên file lệch 1 ngày so với ngày xổ.
+        // Vì vậy không khóa cứng weekday = weekday của tên file.
+        // Ta đối chiếu các đài thực tế có trong file với lịch và chọn offset
+        // có nhiều đài khớp nhất. Nếu không đủ thông tin, ưu tiên offset 0.
         const SCHEDULE_WEEKDAY_OFFSETS = [0, -1, 1];
-        const EXPECTED_NUMBERS_PER_DRAW = Object.freeze({ nam: 18, trung: 18, bac: 27 });
-        const REGION_LABELS = Object.freeze({ nam: 'Miền Nam', trung: 'Miền Trung', bac: 'Miền Bắc' });
 
         function getWeekdayUTC(isoDate, offsetDays = 0) {
             if (!isoDate) return null;
             const [y, m, d] = String(isoDate).split('-').map(Number);
-            if (![y, m, d].every(Number.isFinite)) return null;
             const date = new Date(Date.UTC(y, m - 1, d));
             date.setUTCDate(date.getUTCDate() + Number(offsetDays || 0));
             return date.getUTCDay();
@@ -1313,6 +1358,7 @@
                     if (name) actualStations.push({ regionKey: region.key, name });
                 });
             });
+
             if (!actualStations.length) return 0;
 
             let bestOffset = 0;
@@ -1333,129 +1379,96 @@
         }
 
         function isScheduledStation(regionKey, stationName, isoDate, scheduleOffset = 0) {
+            if (!isoDate) return false;
             const weekday = getWeekdayUTC(isoDate, scheduleOffset);
-            if (weekday === null) return false;
-            const normalized = normalizeStationName(stationName);
+            const station = normalizeStationName(stationName);
             return getScheduledStationsForWeekday(regionKey, weekday)
-                .some(name => normalizeStationName(name) === normalized);
+                .some(name => normalizeStationName(name) === station);
         }
 
-        function getProbabilityDrawKey(day, regionKey, stationName) {
-            return `${day.date}|${regionKey}|${normalizeStationName(stationName)}`;
-        }
 
-        function getStationByRegion(day, regionKey, stationFilter = 'all') {
-            if (!day || !Array.isArray(day.regions)) return [];
-            const wanted = normalizeStationName(stationFilter);
-            const offset = detectScheduleOffset(day, regionKey);
-            const region = day.regions.find(r => r.key === regionKey);
-            if (!region) return [];
-
-            return (region.stations || []).filter(st => {
-                const name = String(st.name || '').trim();
-                if (!name) return false;
-                if (stationFilter && stationFilter !== 'all' && normalizeStationName(name) !== wanted) return false;
-                return isScheduledStation(regionKey, name, day.date, offset);
-            });
-        }
-
-        // Lấy TOÀN BỘ số của một kỳ xổ.
-        // Không được lọc theo độ dài ở đây: khi phân tích 3 số, các giải có số 2 chữ số
-        // (đặc biệt Giải tám) vẫn phải được tính vào mẫu số của cả kỳ.
-        function extractNumericNumbers(station) {
-            const numbers = [];
-            (station?.prizes || []).forEach(prize => {
-                (prize.numbers || []).forEach(num => {
-                    const value = String(num).trim();
-                    if (/^\d+$/.test(value)) numbers.push(value);
-                });
-            });
-            return numbers;
-        }
-
-        function extractPrizeTails(station, labels) {
-            const wanted = new Set(labels.map(x => String(x).replace(/\s+/g, ' ').trim().toLowerCase()));
-            const result = {};
-            wanted.forEach(label => { result[label] = []; });
-            (station?.prizes || []).forEach(prize => {
-                const label = String(prize.label || '').replace(/\s+/g, ' ').trim().toLowerCase();
-                if (!wanted.has(label)) return;
-                (prize.numbers || []).forEach(num => {
-                    const value = String(num).trim();
-                    if (/^\d+$/.test(value) && value.length >= 2) result[label].push(value.slice(-2));
-                });
-            });
-            return result;
-        }
-
-        function createTailCounter(tailLen) {
-            const counter = {};
-            const max = 10 ** tailLen;
-            for (let i = 0; i < max; i++) {
-                const tail = String(i).padStart(tailLen, '0');
-                counter[tail] = { count: 0, dates: new Set() };
-            }
-            return counter;
-        }
-
-        function analyzeTails(allData, regionKey, tailLen, stationFilter = 'all') {
-            const counter = createTailCounter(tailLen);
-            const analyzedDays = new Set();
-            const analyzedDraws = new Set();
-            const expectedPerDraw = EXPECTED_NUMBERS_PER_DRAW[regionKey];
-            let totalNumbers = 0;
-
-            (allData || []).forEach(day => {
-                getStationByRegion(day, regionKey, stationFilter).forEach(station => {
-                    const drawKey = getProbabilityDrawKey(day, regionKey, station.name);
-                    if (analyzedDraws.has(drawKey)) return;
-
-                    const numbers = extractNumericNumbers(station);
-                    if (numbers.length !== expectedPerDraw) return;
-
-                    analyzedDraws.add(drawKey);
-                    analyzedDays.add(day.date);
-                    numbers.forEach(value => {
-                        const tail = value.padStart(tailLen, '0').slice(-tailLen);
-                        if (!counter[tail]) counter[tail] = { count: 0, dates: new Set() };
-                        counter[tail].count++;
-                        counter[tail].dates.add(day.date);
-                        totalNumbers++;
-                    });
-                });
-            });
-
-            return {
-                counter,
-                totalNumbers,
-                drawsCount: analyzedDraws.size,
-                analyzedDays,
-                analyzedDraws,
-                expectedPerDraw,
-                expectedTotalNumbers: analyzedDraws.size * expectedPerDraw
-            };
-        }
-
+        // ============================================================
+        // CÔNG THỨC MỚI: 02 SỐ ĐUÔI — ĐB + G8 — MIỀN TRUNG + MIỀN NAM
+        // Chỉ duyệt region.key = "nam" hoặc "trung"
+        // Chỉ lấy prize.label = "Giải ĐB" hoặc "Giải tám"
+        // Không tính Miền Bắc và không tính các giải khác.
+        // Cách tính xác suất giữ nguyên công thức 02 số đuôi hiện tại:
+        //     xác suất = số lần xuất hiện / tổng số lần * 100%
+        // ============================================================
         function analyzeTailsDBG8MTMN(allData, stationFilter = 'all') {
-            const counter = createTailCounter(2);
+            const counter = {};
+            let totalNumbers = 0;
             const analyzedDays = new Set();
             const analyzedDraws = new Set();
-            let totalNumbers = 0;
 
-            (allData || []).forEach(day => {
-                ['nam', 'trung'].forEach(regionKey => {
-                    getStationByRegion(day, regionKey, stationFilter).forEach(station => {
-                        const drawKey = getProbabilityDrawKey(day, regionKey, station.name);
+            // Chỉ dùng làm bộ nhớ đếm; khi hiển thị sẽ lọc count > 0.
+            for (let i = 0; i <= 99; i++) {
+                const tail = String(i).padStart(2, '0');
+                counter[tail] = {
+                    count: 0,
+                    dates: new Set()
+                };
+            }
+
+            allData.forEach(day => {
+                day.regions.forEach(r => {
+                    // Công thức này chỉ áp dụng cho Miền Trung + Miền Nam.
+                    if (r.key !== 'nam' && r.key !== 'trung') return;
+
+                    r.stations.forEach(st => {
+                        const stationName = String(st.name || '').trim();
+
+                        // Chọn 1 đài -> chỉ đúng đài đó.
+                        if (stationFilter && stationFilter !== 'all' &&
+                            normalizeStationName(stationName) !== normalizeStationName(stationFilter)) {
+                            return;
+                        }
+
+                        // Một ngày chỉ được tính là 1 KỲ nếu đài thực sự nằm
+                        // trong lịch xổ của đúng thứ đó.
+                        const scheduleOffset = detectScheduleOffset(day, r.key);
+                        if (!isScheduledStation(r.key, stationName, day.date, scheduleOffset)) return;
+
+                        let dbTails = [];
+                        let g8Tails = [];
+
+                        st.prizes.forEach(p => {
+                            const prizeLabel = String(p.label || '')
+                                .replace(/\s+/g, ' ')
+                                .trim()
+                                .toLowerCase();
+
+                            const isDB = prizeLabel === 'giải đb';
+                            const isG8 = prizeLabel === 'giải tám';
+
+                            if (!isDB && !isG8) return;
+
+                            (p.numbers || []).forEach(num => {
+                                const value = String(num).trim();
+                                if (value.length < 2) return;
+
+                                const tail = value.slice(-2);
+                                if (!/^\d{2}$/.test(tail)) return;
+
+                                if (isDB) dbTails.push(tail);
+                                if (isG8) g8Tails.push(tail);
+                            });
+                        });
+
+                        // Mỗi kỳ phải có đúng 1 ĐB và đúng 1 G8.
+                        // Như vậy 1 kỳ luôn đóng góp đúng 2 mẫu: ĐB + G8.
+                        // Nếu dữ liệu thiếu hoặc có nhiều số bất thường thì bỏ cả kỳ,
+                        // tránh làm sai mẫu số xác suất.
+                        if (dbTails.length !== 1 || g8Tails.length !== 1) return;
+
+                        const drawKey = `${day.date}|${r.key}|${normalizeStationName(stationName)}`;
                         if (analyzedDraws.has(drawKey)) return;
-
-                        const tails = extractPrizeTails(station, ['Giải ĐB', 'Giải tám']);
-                        const db = tails['giải đb'] || [];
-                        const g8 = tails['giải tám'] || [];
-                        if (db.length !== 1 || g8.length !== 1) return;
 
                         analyzedDraws.add(drawKey);
                         analyzedDays.add(day.date);
-                        [db[0], g8[0]].forEach(tail => {
+
+                        // Mỗi kỳ đóng góp ĐB + G8 vào cùng một mẫu dữ liệu.
+                        [...dbTails, ...g8Tails].forEach(tail => {
                             counter[tail].count++;
                             counter[tail].dates.add(day.date);
                             totalNumbers++;
@@ -1467,60 +1480,155 @@
             return { counter, totalNumbers, analyzedDays, analyzedDraws };
         }
 
+        // Số lượng mẫu chuẩn của một kỳ xổ hoàn chỉnh.
+        // MN/MT: 18 số; MB: 27 số.
+        const EXPECTED_NUMBERS_PER_DRAW = {
+            nam: 18,
+            trung: 18,
+            bac: 27
+        };
+
+        // Phân tích 2 số / 3 số theo ĐÚNG KỲ XỔ THỰC TẾ:
+        // - Chỉ tính đài đúng lịch của ngày đó.
+        // - Chọn 1 đài: chỉ tính kỳ của đài đó.
+        // - Tất cả đài: cộng từng kỳ của từng đài, không lấy số ngày x số đài.
+        // - Một đài/ngày chỉ được tính 1 lần.
+        // - Chỉ nhận kỳ có đủ số theo cấu trúc chuẩn (18 MN/MT, 27 MB).
+        // Nhờ vậy totalNumbers luôn = số kỳ hợp lệ x số mẫu/kỳ.
+        function analyzeTails(allData, regionKey, tailLen, stationFilter) {
+            const counter = {};
+            let totalNumbers = 0;
+            const analyzedDays = new Set();
+            const analyzedDraws = new Set();
+            const expectedPerDraw = EXPECTED_NUMBERS_PER_DRAW[regionKey] || 0;
+
+            // Khởi tạo đủ 00-99 cho 2 số; 000-999 cho 3 số.
+            const maxTail = Math.pow(10, tailLen);
+            for (let i = 0; i < maxTail; i++) {
+                const tail = String(i).padStart(tailLen, '0');
+                counter[tail] = { count: 0, dates: new Set() };
+            }
+
+            allData.forEach(day => {
+                day.regions.forEach(r => {
+                    if (r.key !== regionKey) return;
+
+                    r.stations.forEach(st => {
+                        const stationName = String(st.name || '').trim();
+
+                        if (stationFilter && stationFilter !== 'all' &&
+                            normalizeStationName(stationName) !== normalizeStationName(stationFilter)) {
+                            return;
+                        }
+
+                        // Không tính dữ liệu nếu đài không xổ vào đúng thứ đó.
+                        const scheduleOffset = detectScheduleOffset(day, regionKey);
+                        if (!isScheduledStation(regionKey, stationName, day.date, scheduleOffset)) return;
+
+                        const drawKey = `${day.date}|${regionKey}|${normalizeStationName(stationName)}`;
+                        if (analyzedDraws.has(drawKey)) return;
+
+                        // Gom toàn bộ số hợp lệ của kỳ. Mỗi số trong kỳ chỉ đóng góp
+                        // đúng 1 mẫu cho phân tích đuôi 2 số / 3 số.
+                        const numbers = [];
+                        (st.prizes || []).forEach(p => {
+                            (p.numbers || []).forEach(num => {
+                                const value = String(num).trim();
+                                if (/^\d+$/.test(value) && value.length >= tailLen) {
+                                    numbers.push(value);
+                                }
+                            });
+                        });
+
+                        // Kỳ không hoàn chỉnh thì bỏ cả kỳ, không lấy mẫu số thực tế
+                        // bị thiếu để tránh làm sai xác suất.
+                        if (numbers.length !== expectedPerDraw) return;
+
+                        analyzedDraws.add(drawKey);
+                        analyzedDays.add(day.date);
+
+                        numbers.forEach(value => {
+                            const tail = value.slice(-tailLen);
+                            if (!/^\d+$/.test(tail)) return;
+
+                            // counter đã được khởi tạo, nhưng vẫn giữ fallback an toàn.
+                            if (!counter[tail]) {
+                                counter[tail] = { count: 0, dates: new Set() };
+                            }
+                            counter[tail].count++;
+                            counter[tail].dates.add(day.date);
+                            totalNumbers++;
+                        });
+                    });
+                });
+            });
+
+            const drawsCount = analyzedDraws.size;
+            const expectedTotalNumbers = drawsCount * expectedPerDraw;
+
+            // Đây là chốt kiểm tra nội bộ: nếu lệch thì dữ liệu/cấu trúc đã có vấn đề.
+            // Không âm thầm sửa totalNumbers để che lỗi dữ liệu.
+            if (totalNumbers !== expectedTotalNumbers) {
+                console.warn('Mẫu số không khớp kỳ vọng:', {
+                    regionKey, tailLen, drawsCount, expectedPerDraw,
+                    totalNumbers, expectedTotalNumbers
+                });
+            }
+
+            return {
+                counter,
+                totalNumbers,
+                drawsCount,
+                analyzedDays,
+                analyzedDraws,
+                expectedPerDraw,
+                expectedTotalNumbers
+            };
+        }
+
         function analyzeCombos(allData, combos, stationFilter = 'all') {
             const result = {};
             const analyzedDays = new Set();
             const analyzedDraws = new Set();
-            combos.forEach(combo => { result[combo.join('-')] = { days: [], combo }; });
+            combos.forEach(combo => { result[combo.join("-")] = { days: [], combo }; });
+            allData.forEach(day => {
+                const allTails = new Set();
+                let hasEligibleStation = false;
+                day.regions.forEach(r => {
+                    if (r.key !== 'bac') return;
+                    r.stations.forEach(st => {
+                        const stationName = String(st.name || '').trim();
+                        if (stationFilter && stationFilter !== 'all' && normalizeStationName(stationName) !== normalizeStationName(stationFilter)) return;
+                        const scheduleOffset = detectScheduleOffset(day, 'bac');
+                        if (!isScheduledStation('bac', stationName, day.date, scheduleOffset)) return;
+                        // MB: chỉ tính một kỳ hoàn chỉnh (27 số).
+                        // Không dùng số ngày/file làm mẫu số.
+                        const mbNumbers = [];
+                        (st.prizes || []).forEach(p => {
+                            (p.numbers || []).forEach(num => {
+                                const value = String(num).trim();
+                                if (/^\d+$/.test(value) && value.length >= 2) mbNumbers.push(value);
+                            });
+                        });
+                        if (mbNumbers.length !== EXPECTED_NUMBERS_PER_DRAW.bac) return;
 
-            (allData || []).forEach(day => {
-                const dayTails = new Set();
-                let hasEligibleDraw = false;
-
-                getStationByRegion(day, 'bac', stationFilter).forEach(station => {
-                    const drawKey = getProbabilityDrawKey(day, 'bac', station.name);
-                    if (analyzedDraws.has(drawKey)) return;
-
-                    const numbers = extractNumericNumbers(station);
-                    if (numbers.length !== EXPECTED_NUMBERS_PER_DRAW.bac) return;
-
-                    analyzedDraws.add(drawKey);
-                    hasEligibleDraw = true;
-                    numbers.forEach(value => dayTails.add(value.slice(-2)));
+                        const drawKey = `${day.date}|bac|${normalizeStationName(stationName)}`;
+                        if (analyzedDraws.has(drawKey)) return;
+                        analyzedDraws.add(drawKey);
+                        hasEligibleStation = true;
+                        mbNumbers.forEach(num => {
+                            const value = String(num).trim();
+                            allTails.add(value.slice(-2));
+                        });
+                    });
                 });
-
-                if (!hasEligibleDraw) return;
+                if (!hasEligibleStation) return;
                 analyzedDays.add(day.date);
                 combos.forEach(combo => {
-                    if (combo.every(n => dayTails.has(n))) {
-                        result[combo.join('-')].days.push(day.date);
-                    }
+                    if (combo.every(n => allTails.has(n))) result[combo.join("-")].days.push(day.date);
                 });
             });
-
             return { result, analyzedDays, analyzedDraws };
-        }
-
-        function parseProbabilityCombos(raw, requestedType = 'all') {
-            const capCombos = [];
-            const bo3Combos = [];
-            const invalid = [];
-            const text = String(raw || '').trim();
-            if (!text) return { capCombos, bo3Combos, invalid };
-
-            text.split(',').forEach(chunk => {
-                const original = chunk.trim();
-                const parts = original.split('-').map(x => x.trim()).filter(Boolean);
-                const unique = new Set(parts);
-                const valid2 = parts.length === 2 && parts.every(x => /^\d{2}$/.test(x)) && unique.size === 2;
-                const valid3 = parts.length === 3 && parts.every(x => /^\d{2}$/.test(x)) && unique.size === 3;
-
-                if ((requestedType === 'cap' || requestedType === 'all') && valid2) capCombos.push(parts);
-                else if ((requestedType === 'bo3' || requestedType === 'all') && valid3) bo3Combos.push(parts);
-                else invalid.push(original || '(trống)');
-            });
-
-            return { capCombos, bo3Combos, invalid };
         }
 
         function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate, periodLabel = 'Ngày phân tích', drawsCount = null, totalLabel = 'Tổng số lần') {
@@ -1529,7 +1637,7 @@
             const sorted = Object.entries(counter)
                 .filter(([num, info]) => info.count > 0)
                 .sort((a, b) => b[1].count - a[1].count);
-            const top = sorted.slice(0, 99);
+            const top = sorted.slice(0, 30);
 
             let html = `<div class="prob-summary">
                 <div class="box"><div class="val">${totalNumbers.toLocaleString()}</div><div class="lbl">${totalLabel}</div></div>
@@ -1538,16 +1646,12 @@
                 ${drawsCount !== null ? `<div class="box"><div class="val">${drawsCount}</div><div class="lbl">Số kỳ xổ</div></div>` : ''}
             </div>`;
 
-            html += `<div style="text-align:center; color:var(--green); margin:6px 0; font-size:0.78rem;">
-                🔢 MẪU SỐ = SỐ KỲ XỔ × SỐ MẪU/KỲ
-            </div>`;
-
             html += `<div style="text-align:center; color:var(--cyan); margin:10px 0; font-size:0.85rem;">
                 📅 TỪ ${firstDate.split('-').reverse().join('/')} ĐẾN ${lastDate.split('-').reverse().join('/')}
             </div>`;
 
             html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
-                📊 TOP 99 SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}
+                📊 TOP 30 SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}
             </h3>`;
 
             html += `<div style="overflow-x:auto;">
@@ -1609,7 +1713,7 @@
             </div>`;
 
             const size = combos[0].length;
-            const title = size === 2 ? '🎲 XÁC SUẤT CẶP SỐ ĐÁ — MIỀN BẮC' : '🎲 XÁC SUẤT 03 CẶP ĐÁ VÒNG — MIỀN BẮC';
+            const title = size === 2 ? '🎲 XÁC SUẤT CẶP SỐ — MIỀN BẮC' : '🎲 XÁC SUẤT BỘ 3 SỐ — MIỀN BẮC';
             html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">${title}</h3>`;
             html += `<table class="prob-table"><thead><tr><th>#</th><th>Bộ số</th><th>Số ngày cùng về</th><th>Xác suất</th></tr></thead><tbody>`;
 
@@ -1671,6 +1775,7 @@
         btnAnalyze.addEventListener('click', async () => {
             const type = probType.value;
             const region = probRegion.value;
+            const weekday = probWeekday.value;
             const stationFilter = probStation.value;
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
 
@@ -1690,10 +1795,10 @@
                 }
             }
 
-            // Cặp số Đá / 03 cặp Đá vòng chỉ bắt buộc nhập số khi người dùng chọn riêng loại đó.
+            // Cặp/Bộ 3 chỉ bắt buộc nhập số khi người dùng chọn riêng loại đó.
             // Với MB + Tất cả, nhập số là tùy chọn; không nhập vẫn chạy 2 số + 3 số.
             if (region === 'bac' && (type === 'cap' || type === 'bo3') && !probExtra.value.trim()) {
-                showProbStatus('error', 'VUI LÒNG NHẬP CẶP SỐ ĐÁ / 03 CẶP ĐÁ VÒNG');
+                showProbStatus('error', 'VUI LÒNG NHẬP CẶP/BỘ 3 SỐ');
                 return;
             }
 
@@ -1709,7 +1814,25 @@
                     return;
                 }
 
-                showProbStatus('loading', 'ĐANG TÍNH TOÁN...');
+                // Lọc theo THỨ trước khi chuyển dữ liệu sang các hàm tính xác suất.
+                // "Cả tuần" giữ nguyên toàn bộ allData.
+                const filteredData = filterDataByWeekday(allData);
+
+                if (filteredData.length === 0) {
+                    showProbStatus(
+                        'error',
+                        `KHÔNG CÓ DỮ LIỆU ${getWeekdayLabel(weekday)} TRONG KHOẢNG ĐÃ CHỌN`
+                    );
+                    btnAnalyze.disabled = false;
+                    return;
+                }
+
+                showProbStatus(
+                    'loading',
+                    weekday === 'all'
+                        ? 'ĐANG TÍNH TOÁN...'
+                        : `ĐANG TÍNH TOÁN ${getWeekdayLabel(weekday).toUpperCase()}...`
+                );
                 await new Promise(r => setTimeout(r, 50));
 
                 const regionNames = { nam: 'Miền Nam', trung: 'Miền Trung', bac: 'Miền Bắc' };
@@ -1718,7 +1841,7 @@
                     : regionNames[region];
 
                 const runTail = (tailLen) => {
-                    const data = analyzeTails(allData, region, tailLen, stationFilter);
+                    const data = analyzeTails(filteredData, region, tailLen, stationFilter);
                     if (!data.totalNumbers) return null;
                     const dates = Array.from(data.analyzedDays).sort();
                     return {
@@ -1734,13 +1857,13 @@
 
                 const runDBG8 = () => {
                     if (region === 'bac') return null;
-                    const data = analyzeTailsDBG8MTMN(allData, stationFilter);
+                    const data = analyzeTailsDBG8MTMN(filteredData, stationFilter);
                     if (!data.totalNumbers) return null;
                     const dates = Array.from(data.analyzedDays).sort();
                     return {
                         html: renderTailResult(
                             data.counter, data.totalNumbers, 2,
-                            'Đầu Đuôi (Miền Trung + Miền Nam)',
+                            'ĐB + G8 (Miền Trung + Miền Nam)',
                             data.analyzedDays.size, dates[0], dates[dates.length - 1],
                             'Ngày có kỳ xổ', data.analyzedDraws.size, 'Tổng mẫu'
                         ),
@@ -1749,12 +1872,28 @@
                     };
                 };
 
-                const parseCombos = (requestedType) =>
-                    parseProbabilityCombos(probExtra.value, requestedType);
+                const parseCombos = (requestedType) => {
+                    const raw = probExtra.value.trim();
+                    const capCombos = [], bo3Combos = [], invalid = [];
+                    if (!raw) return { capCombos, bo3Combos, invalid: [] };
+
+                    for (const chunk of raw.split(',')) {
+                        const parts = chunk.trim().split('-').map(p => p.trim()).filter(Boolean);
+                        const valid2 = parts.length === 2 && parts.every(p => /^\d{2}$/.test(p)) && new Set(parts).size === 2;
+                        const valid3 = parts.length === 3 && parts.every(p => /^\d{2}$/.test(p)) && new Set(parts).size === 3;
+
+                        if (requestedType === 'cap' && valid2) capCombos.push(parts);
+                        else if (requestedType === 'bo3' && valid3) bo3Combos.push(parts);
+                        else if (requestedType === 'all' && valid2) capCombos.push(parts);
+                        else if (requestedType === 'all' && valid3) bo3Combos.push(parts);
+                        else invalid.push(chunk);
+                    }
+                    return { capCombos, bo3Combos, invalid };
+                };
 
                 const runCombo = (combos) => {
                     if (!combos.length) return null;
-                    const data = analyzeCombos(allData, combos, stationFilter);
+                    const data = analyzeCombos(filteredData, combos, stationFilter);
                     const drawsCount = data.analyzedDraws.size;
                     if (!drawsCount) return null;
                     return {
@@ -1778,22 +1917,22 @@
                         addTail(runTail(2), '🎯 2 SỐ ĐUÔI');
                         addTail(runTail(3), '🎯 3 SỐ ĐUÔI');
                         const rDbg8 = runDBG8();
-                        if (rDbg8) addTail(rDbg8, '🎯 ĐẦU ĐUÔI');
+                        if (rDbg8) addTail(rDbg8, '🎯 ĐB + G8');
                     } else {
                         addTail(runTail(2), '🎯 2 SỐ ĐUÔI — MIỀN BẮC');
                         addTail(runTail(3), '🎯 3 SỐ ĐUÔI — MIỀN BẮC');
 
                         const parsed = parseCombos('all');
                         if (probExtra.value.trim() && parsed.invalid.length) {
-                            showProbStatus('error', 'SAI ĐỊNH DẠNG CẶP SỐ ĐÁ / 03 CẶP ĐÁ VÒNG: ' + parsed.invalid.join(', '));
+                            showProbStatus('error', 'SAI ĐỊNH DẠNG CẶP/BỘ 3: ' + parsed.invalid.join(', '));
                             btnAnalyze.disabled = false;
                             return;
                         }
 
                         const rCap = runCombo(parsed.capCombos);
                         const rBo3 = runCombo(parsed.bo3Combos);
-                        if (rCap) addTail(rCap, '🎯 CẶP SỐ ĐÁ — MIỀN BẮC');
-                        if (rBo3) addTail(rBo3, '🎯 03 CẶP ĐÁ VÒNG — MIỀN BẮC');
+                        if (rCap) addTail(rCap, '🎯 CẶP SỐ — MIỀN BẮC');
+                        if (rBo3) addTail(rBo3, '🎯 BỘ 3 SỐ — MIỀN BẮC');
                     }
 
                     if (!sections.length) {
@@ -1806,10 +1945,11 @@
                         <div class="prob-summary">
                             <div class="box"><div class="val">TẤT CẢ</div><div class="lbl">Loại phân tích</div></div>
                             <div class="box"><div class="val">${regionLabel}</div><div class="lbl">Phạm vi</div></div>
+                            <div class="box"><div class="val">${getWeekdayLabel(weekday)}</div><div class="lbl">Thứ</div></div>
                         </div>
                         ${sections.join('')}`;
 
-                    showProbStatus('success', `HOÀN TẤT :: TẤT CẢ LOẠI HỢP LỆ — ${regionLabel}`);
+                    showProbStatus('success', `HOÀN TẤT :: TẤT CẢ LOẠI HỢP LỆ — ${regionLabel} — ${getWeekdayLabel(weekday)}`);
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -1817,19 +1957,19 @@
                 if (type === '2so_dbg8_mtmn') {
                     const data = runDBG8();
                     if (!data) {
-                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐẦU ĐUÔI CỦA MIỀN TRUNG / MIỀN NAM');
+                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐB + G8 CỦA MIỀN TRUNG / MIỀN NAM');
                         btnAnalyze.disabled = false;
                         return;
                     }
                     probResult.innerHTML = data.html;
-                    showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ XỔ, ${data.totalNumbers.toLocaleString()} MẪU — ĐẦU ĐUÔI MT + MN${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
+                    showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ XỔ, ${data.totalNumbers.toLocaleString()} MẪU — ĐB + G8 MT + MN — ${getWeekdayLabel(weekday)}${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
                     btnAnalyze.disabled = false;
                     return;
                 }
 
                 if (type === 'cap' || type === 'bo3') {
                     if (region !== 'bac') {
-                        showProbStatus('error', 'CHỈ HỖ TRỢ MIỀN BẮC CHO CẶP SỐ ĐÁ / 03 CẶP ĐÁ VÒNG');
+                        showProbStatus('error', 'CHỈ HỖ TRỢ MIỀN BẮC CHO CẶP/BỘ 3');
                         btnAnalyze.disabled = false;
                         return;
                     }
@@ -1847,7 +1987,7 @@
                         return;
                     }
                     probResult.innerHTML = data.html;
-                    showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ MB${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
+                    showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ MB — ${getWeekdayLabel(weekday)}${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -1860,7 +2000,7 @@
                     return;
                 }
                 probResult.innerHTML = data.html;
-                showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ, ${data.totalNumbers.toLocaleString()} MẪU${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
+                showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ, ${data.totalNumbers.toLocaleString()} MẪU — ${getWeekdayLabel(weekday)}${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
                 btnAnalyze.disabled = false;
             } catch (err) {
                 console.error(err);

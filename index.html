@@ -721,7 +721,7 @@
                 </div>
             </div>
 
-            <div class="prob-form" id="probRecentGroup" style="display:none;">
+            <div class="prob-form" id="probRecentGroup">
                 <label>SỐ NGÀY</label>
                 <select id="probDays">
                     <option value="7">7 ngày</option>
@@ -759,7 +759,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.0.6
+            &nbsp;|&nbsp; VERSION 8.0.7
         </div>
     </div>
 
@@ -1245,7 +1245,7 @@
         probWeekday.value = 'all';
         probStation.value = 'all';
         updateStationDropdown();
-        probType.value = 'all';
+        probType.value = '2so';
         updateProbabilityTypes();
         updateProbabilityExtra();
 
@@ -1471,7 +1471,10 @@
                 const name = String(st.name || '').trim();
                 if (!name) return false;
                 if (stationFilter && stationFilter !== 'all' && normalizeStationName(name) !== wanted) return false;
-                return isScheduledStation(regionKey, name, day.date, 0);
+                // day.date dùng trực tiếp cho bộ lọc THỨ. Riêng kiểm tra lịch đài,
+                // vẫn dùng offset tương thích dữ liệu cũ để không làm mất đài MT/MB.
+                const scheduleOffset = detectScheduleOffset(day, regionKey);
+                return isScheduledStation(regionKey, name, day.date, scheduleOffset);
             });
         }
 

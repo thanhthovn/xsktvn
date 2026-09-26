@@ -697,9 +697,9 @@
                 <select id="probType">
                     <option value="2so" selected>2 số đuôi</option>
                     <option value="3so">3 số đuôi</option>
-                    <option value="2so_dbg8_mtmn">Đầu Đuôi (ĐB + G8)</option>
-                    <option value="cap">Cặp số Đá</option>
-                    <option value="bo3">Bộ 03 số Đá Vòng</option>
+                    <option value="2so_dbg8_mtmn">ĐB + G8</option>
+                    <option value="cap">Cặp số</option>
+                    <option value="bo3">Bộ 3 số</option>
                 </select>
             </div>
 
@@ -719,11 +719,10 @@
                         Khoảng ngày cụ thể
                     </label>
                 </div>
-            </div>
 
-            <div class="prob-form" id="probRecentGroup">
-                <label>SỐ NGÀY</label>
-                <select id="probDays">
+                <div id="probRecentGroup" style="display:none; align-items:center; gap:12px;">
+                    <label>SỐ NGÀY</label>
+                    <select id="probDays">
                     <option value="7">7 ngày</option>
                     <option value="14">14 ngày</option>
                     <option value="21">21 ngày</option>
@@ -736,13 +735,14 @@
                     <option value="365">365 ngày</option>
                     <option value="512">512 ngày</option>
                 </select>
-            </div>
+                </div>
 
-            <div class="prob-form" id="probRangeGroup" style="display:none;">
-                <label>TỪ NGÀY</label>
-                <input type="date" id="probFromDate" />
-                <label>ĐẾN NGÀY</label>
-                <input type="date" id="probToDate" />
+                <div id="probRangeGroup" style="display:none; align-items:center; gap:12px;">
+                    <label>TỪ NGÀY</label>
+                    <input type="date" id="probFromDate" />
+                    <label>ĐẾN NGÀY</label>
+                    <input type="date" id="probToDate" />
+                </div>
             </div>
 
             <div class="prob-form">
@@ -759,7 +759,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.1.0
+            &nbsp;|&nbsp; VERSION 8.1.1
         </div>
     </div>
 

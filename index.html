@@ -706,8 +706,12 @@
             <div class="prob-form">
                 <label>CHẾ ĐỘ</label>
                 <div class="range-mode-group">
-                    <label class="active" id="modeRecentLbl">
-                        <input type="radio" name="rangeMode" value="recent" checked onchange="switchRangeMode()" />
+                    <label class="active" id="modeYearLbl">
+                        <input type="radio" name="rangeMode" value="year" checked onchange="switchRangeMode()" />
+                        Từ đầu năm <span id="currentYearLabel">2026</span>
+                    </label>
+                    <label id="modeRecentLbl">
+                        <input type="radio" name="rangeMode" value="recent" onchange="switchRangeMode()" />
                         Số ngày gần nhất
                     </label>
                     <label id="modeRangeLbl">
@@ -755,7 +759,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.0.3
+            &nbsp;|&nbsp; VERSION 8.0.4
         </div>
     </div>
 
@@ -834,21 +838,46 @@
         }
 
         // ===== SWITCH RANGE MODE =====
+        function getCurrentYearVN() {
+            const now = new Date();
+            return Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric' }).format(now));
+        }
+
+        function getTodayISODateVN() {
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            }).format(new Date());
+        }
+
+        function updateYearModeDates() {
+            const year = getCurrentYearVN();
+            const today = getTodayISODateVN();
+            probFromDate.value = `${year}-01-01`;
+            probToDate.value = today;
+            document.getElementById('currentYearLabel').textContent = year;
+        }
+
         function switchRangeMode() {
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
+            const yearLbl = document.getElementById('modeYearLbl');
             const recentLbl = document.getElementById('modeRecentLbl');
             const rangeLbl = document.getElementById('modeRangeLbl');
 
-            if (mode === 'recent') {
+            yearLbl.classList.toggle('active', mode === 'year');
+            recentLbl.classList.toggle('active', mode === 'recent');
+            rangeLbl.classList.toggle('active', mode === 'range');
+
+            if (mode === 'year') {
+                probRecentGroup.style.display = 'none';
+                probRangeGroup.style.display = 'none';
+                updateYearModeDates();
+            } else if (mode === 'recent') {
                 probRecentGroup.style.display = 'flex';
                 probRangeGroup.style.display = 'none';
-                recentLbl.classList.add('active');
-                rangeLbl.classList.remove('active');
             } else {
                 probRecentGroup.style.display = 'none';
                 probRangeGroup.style.display = 'flex';
-                recentLbl.classList.remove('active');
-                rangeLbl.classList.add('active');
                 if (!probFromDate.value || !probToDate.value) {
                     const sortedDates = Array.from(availableDates).sort().reverse();
                     if (sortedDates.length > 0) {
@@ -858,7 +887,6 @@
                 }
             }
         }
-
         function toggleCalendar() {
             const wrap = document.getElementById('calendarWrap');
             const toggle = document.getElementById('calToggle');
@@ -1225,7 +1253,11 @@
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
             const allSorted = Array.from(availableDates).sort().reverse();
 
-            if (mode === 'recent') {
+            if (mode === 'year') {
+                const year = getCurrentYearVN();
+                const today = getTodayISODateVN();
+                return allSorted.filter(iso => iso >= `${year}-01-01` && iso <= today);
+            } else if (mode === 'recent') {
                 const days = parseInt(probDays.value, 10);
                 if (!days || allSorted.length === 0) return [];
 

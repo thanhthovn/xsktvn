@@ -619,7 +619,7 @@
         <!-- ===== TAB 1: KẾT QUẢ ===== -->
         <div id="tab-result" class="tab-content active">
             <div class="date-form">
-                                <button type="button" class="date-nav-btn" id="prevDateBtn" onclick="changeDateBy(-1)" title="Ngày trước" aria-label="Ngày trước">‹</button>
+                <button type="button" class="date-nav-btn" id="prevDateBtn" onclick="changeDateBy(-1)" title="Ngày trước" aria-label="Ngày trước">‹</button>
                 <label for="dateInput">SELECT_DATE</label>
                 <span id="weekdayDisplay" class="weekday-display"></span>
                 <input type="date" id="dateInput" />
@@ -708,7 +708,7 @@
                 <div class="range-mode-group">
                     <label class="active" id="modeYearLbl">
                         <input type="radio" name="rangeMode" value="year" checked onchange="switchRangeMode()" />
-                        Từ đầu năm <span id="currentYearLabel">2026</span>
+                        Từ đầu năm <span id="currentYearLabel">----</span>
                     </label>
                     <label id="modeRecentLbl">
                         <input type="radio" name="rangeMode" value="recent" onchange="switchRangeMode()" />
@@ -759,7 +759,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.1.2
+            &nbsp;|&nbsp; VERSION 8.1.4
         </div>
     </div>
 
@@ -994,7 +994,13 @@
                     probToDate.value = sortedDates[0];
                     probFromDate.value = sortedDates[Math.min(29, sortedDates.length - 1)];
                 }
-            } catch (err) { console.warn(err); }
+            } catch (err) {
+                console.warn(err);
+                // FIX: reset state khi index.json lỗi để tránh stale data
+                availableDates = new Set();
+                statsBox.style.display = 'none';
+                calendarSection.style.display = 'none';
+            }
         }
 
         function renderCalendar() {
@@ -1066,20 +1072,34 @@
             resultBox.innerHTML = html;
         }
 
+        // FIX #3: dùng AbortController để tránh race condition khi user đổi ngày liên tục
+        let loadResultController = null;
+
         async function loadResult(isoDate) {
             currentIsoDate = isoDate;
             showStatus('loading', 'LOADING_DATA...');
             resultBox.innerHTML = '';
+
+            // Hủy request cũ nếu có
+            if (loadResultController) {
+                try { loadResultController.abort(); } catch (e) {}
+            }
+            loadResultController = new AbortController();
+            const signal = loadResultController.signal;
+
             const year = isoDate.slice(0, 4);
             try {
-                const res = await fetch(`data/${year}/${isoDate}.json?_=${Date.now()}`);
+                const res = await fetch(`data/${year}/${isoDate}.json?_=${Date.now()}`, { signal });
                 if (!res.ok) throw new Error('NO_DATA_FOR_THIS_DATE');
                 const data = await res.json();
+                // Kiểm tra race: nếu user đã đổi ngày trong lúc fetch, bỏ qua response
+                if (currentIsoDate !== isoDate) return;
                 renderResult(data);
                 statusBox.style.display = 'none';
             } catch (err) {
+                if (err.name === 'AbortError') return; // request bị hủy, không phải lỗi
+                if (currentIsoDate !== isoDate) return;
                 if (err.message === 'NO_DATA_FOR_THIS_DATE') {
-                    // Nếu hôm nay chưa có dữ liệu, dẫn thẳng tới Minh Ngọc theo ngày VN hiện tại.
                     const todayVN = getRealTodayVN();
                     const minhNgocUrl = `https://www.minhngoc.net/ket-qua-xo-so/${todayVN}.html`;
                     const displayDate = todayVN.split('-').reverse().join('/');
@@ -1116,9 +1136,6 @@
             const region = probRegion.value;
             const currentType = probType.value;
 
-            // Loại hợp lệ:
-            // - Miền Nam / Miền Trung: 2 số, 3 số, ĐB + G8.
-            // - Miền Bắc: 2 số, 3 số, Cặp, Bộ 3.
             const mtmnOnlyTypes = new Set(['2so_dbg8_mtmn']);
             const mbOnlyTypes = new Set(['cap', 'bo3']);
 
@@ -1133,7 +1150,6 @@
                 option.disabled = option.hidden;
             });
 
-            // Khi đổi miền, giữ loại nếu còn hợp lệ; nếu không thì về 2 số.
             const invalidForRegion =
                 (region === 'bac' && currentType === '2so_dbg8_mtmn') ||
                 (region !== 'bac' && (currentType === 'cap' || currentType === 'bo3'));
@@ -1147,8 +1163,6 @@
 
         // ============================================================
         // QUẢN LÝ ĐÀI THEO MIỀN + THỨ
-        // Cả tuần -> ẩn ĐÀI, nội bộ = all
-        // Thứ 2-7 -> hiện ĐÀI, chỉ liệt kê đài đúng lịch của thứ đó
         // ============================================================
         function getWeekdayLabel(value) {
             const labels = { '1':'Thứ 2', '2':'Thứ 3', '3':'Thứ 4', '4':'Thứ 5', '5':'Thứ 6', '6':'Thứ 7' };
@@ -1178,8 +1192,6 @@
             const region = probRegion.value;
             const weekday = probWeekday.value;
 
-            // MIỀN BẮC giữ nguyên logic cũ: mỗi ngày chỉ có 1 đài,
-            // không áp dụng bộ lọc THỨ. Vẫn cho phép chọn đài MB như trước.
             if (region === 'bac') {
                 if (probWeekdayGroup) probWeekdayGroup.style.display = 'none';
                 if (probStationGroup) probStationGroup.style.display = '';
@@ -1249,8 +1261,6 @@
         updateProbabilityTypes();
         updateProbabilityExtra();
 
-        // Đồng bộ giao diện chế độ ngay khi trang vừa khởi tạo.
-        // Mặc định là Từ đầu năm => ẩn hoàn toàn ô SỐ NGÀY.
         switchRangeMode();
 
         function getDatesToLoad() {
@@ -1265,9 +1275,6 @@
                 const days = parseInt(probDays.value, 10);
                 if (!days || allSorted.length === 0) return [];
 
-                // "N ngày gần nhất" = đúng N NGÀY LỊCH tính từ ngày dữ liệu mới nhất.
-                // Không được biến thành N file dữ liệu: nếu thiếu file ở một ngày,
-                // vẫn giữ nguyên ngày đó trong khoảng và loadDaysData() sẽ bỏ qua file thiếu.
                 const latestIso = allSorted[0];
                 const [ly, lm, ld] = latestIso.split('-').map(Number);
                 const latestDate = new Date(Date.UTC(ly, lm - 1, ld));
@@ -1294,58 +1301,76 @@
             }
         }
 
+        // FIX #3: Fetch song song có giới hạn concurrency (thay vì tuần tự)
+        async function fetchWithConcurrency(items, worker, limit = 16) {
+            const results = new Array(items.length);
+            let cursor = 0;
+            let done = 0;
+
+            async function run() {
+                while (true) {
+                    const idx = cursor++;
+                    if (idx >= items.length) return;
+                    try {
+                        results[idx] = await worker(items[idx], idx);
+                    } catch (e) {
+                        results[idx] = null;
+                    }
+                    done++;
+                }
+            }
+
+            const runners = [];
+            const n = Math.min(limit, items.length);
+            for (let i = 0; i < n; i++) runners.push(run());
+            await Promise.all(runners);
+            return results;
+        }
+
         async function loadDaysData() {
             const datesToLoad = getDatesToLoad();
             if (datesToLoad.length === 0) return [];
 
             const allData = [];
             let loaded = 0;
+            const total = datesToLoad.length;
 
-            for (const iso of datesToLoad) {
-                const year = iso.slice(0, 4);
-                try {
-                    const res = await fetch(`data/${year}/${iso}.json?_=${Date.now()}`);
-                    if (!res.ok) continue;
-                    const dayData = await res.json();
-                    allData.push({ date: iso, regions: dayData.regions || [] });
-                    loaded++;
-                    if (loaded % 10 === 0) {
-                        showProbStatus('loading', `ĐANG TẢI... ${loaded}/${datesToLoad.length}`);
+            // Cập nhật tiến độ mỗi 10 file
+            const tick = () => {
+                loaded++;
+                if (loaded % 10 === 0 || loaded === total) {
+                    showProbStatus('loading', `ĐANG TẢI... ${loaded}/${total}`);
+                }
+            };
+
+            const results = await fetchWithConcurrency(
+                datesToLoad,
+                async (iso) => {
+                    const year = iso.slice(0, 4);
+                    try {
+                        const res = await fetch(`data/${year}/${iso}.json?_=${Date.now()}`);
+                        if (!res.ok) { tick(); return null; }
+                        const dayData = await res.json();
+                        tick();
+                        return { date: iso, regions: dayData.regions || [] };
+                    } catch (e) {
+                        console.warn('Skip', iso, e.message);
+                        tick();
+                        return null;
                     }
-                } catch (e) { console.warn('Skip', iso, e.message); }
+                },
+                16
+            );
+
+            // Giữ thứ tự ngày tăng dần (getDatesToLoad trả về mới -> cũ, ta đảo lại cho tự nhiên)
+            for (const r of results) {
+                if (r) allData.push(r);
             }
             return allData;
         }
 
         // ============================================================
-        // LỊCH XỔ THỰC TẾ CỦA CÁC ĐÀI MT + MN
-        // Dùng để kiểm tra một đài có đúng lịch mở thưởng hay không.
-        // Vẫn lấy dữ liệu thực tế làm nguồn quyết định cuối cùng:
-        // ngày có file + đài có trong file + đúng lịch => 1 kỳ xổ.
-        // ============================================================
-        // ============================================================
         // LỊCH XỔ CỐ ĐỊNH CỦA CÁC ĐÀI
-        // weekday: 0 = Chủ nhật ... 6 = Thứ bảy
-        //
-        // MT dùng đúng lịch đã xác định:
-        // CN: Phú Yên, Huế
-        // T2: Đắk Lắk, Quảng Nam
-        // T3: Đà Nẵng, Khánh Hòa
-        // T4: Bình Định, Quảng Trị, Quảng Bình
-        // T5: Gia Lai, Ninh Thuận
-        // T6: Đà Nẵng, Quảng Ngãi, Đắk Nông
-        // T7: Kon Tum, Huế, Khánh Hòa
-        //
-        // MB dùng đúng lịch:
-        // CN: Hà Nội
-        // T2: Quảng Ninh
-        // T3: Bắc Ninh
-        // T4: Hà Nội
-        // T5: Hải Phòng
-        // T6: Nam Định
-        // T7: Thái Bình
-        //
-        // MN giữ lịch theo từng ngày trong tuần.
         // ============================================================
         const STATIONS_BY_WEEKDAY_MT = {
             0: ["Phú Yên", "Huế"],
@@ -1377,19 +1402,17 @@
             6: ["TP. HCM", "Long An", "Bình Phước", "Hậu Giang"],
         };
 
+        // FIX #2: Chuẩn hóa tên đài — bỏ dấu tiếng Việt, bỏ dấu chấm, gộp khoảng trắng
         function normalizeStationName(name) {
             return String(name || '')
-                .replace(/\s+/g, ' ')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')   // bỏ dấu
+                .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+                .replace(/[.\s]+/g, ' ')            // gộp dấu chấm + khoảng trắng
                 .trim()
                 .toLowerCase();
         }
 
-        // ============================================================
-        // LỊCH XỔ + LỌC THỨ CHO MODULE XÁC SUẤT
-        // getWeekdayUTC: 0=CN, 1=T2, ..., 6=T7.
-        // probWeekday chỉ có T2-T7; Cả tuần bao gồm cả CN.
-        // Bộ lọc mới luôn đối chiếu trực tiếp với day.date.
-        // ============================================================
         function getWeekdayUTC(isoDate, offsetDays = 0) {
             if (typeof isoDate !== 'string') return null;
             const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
@@ -1416,11 +1439,16 @@
             return [];
         }
 
-        // Chỉ giữ để tương thích với logic cũ; analyzer v8 KHÔNG dùng offset này.
         const SCHEDULE_WEEKDAY_OFFSETS = [0, -1, 1];
+
+        // Cache detectScheduleOffset theo key "date|regionKey" để tránh tính lặp
+        const _scheduleOffsetCache = new Map();
 
         function detectScheduleOffset(day, regionKey = null) {
             if (!day || !day.date || !Array.isArray(day.regions)) return 0;
+            const cacheKey = `${day.date}|${regionKey || 'all'}`;
+            if (_scheduleOffsetCache.has(cacheKey)) return _scheduleOffsetCache.get(cacheKey);
+
             const actualStations = [];
             day.regions.forEach(region => {
                 if (regionKey && region.key !== regionKey) return;
@@ -1430,7 +1458,10 @@
                     if (name) actualStations.push({ regionKey: region.key, name });
                 });
             });
-            if (!actualStations.length) return 0;
+            if (!actualStations.length) {
+                _scheduleOffsetCache.set(cacheKey, 0);
+                return 0;
+            }
             let bestOffset = 0, bestScore = -1;
             for (const offset of SCHEDULE_WEEKDAY_OFFSETS) {
                 const weekday = getWeekdayUTC(day.date, offset);
@@ -1440,6 +1471,7 @@
                 });
                 if (score > bestScore) { bestScore = score; bestOffset = offset; }
             }
+            _scheduleOffsetCache.set(cacheKey, bestOffset);
             return bestOffset;
         }
 
@@ -1471,13 +1503,12 @@
             const region = day.regions.find(r => r.key === regionKey);
             if (!region || !Array.isArray(region.stations)) return [];
 
+            const scheduleOffset = detectScheduleOffset(day, regionKey);
+
             return region.stations.filter(st => {
                 const name = String(st.name || '').trim();
                 if (!name) return false;
                 if (stationFilter && stationFilter !== 'all' && normalizeStationName(name) !== wanted) return false;
-                // day.date dùng trực tiếp cho bộ lọc THỨ. Riêng kiểm tra lịch đài,
-                // vẫn dùng offset tương thích dữ liệu cũ để không làm mất đài MT/MB.
-                const scheduleOffset = detectScheduleOffset(day, regionKey);
                 return isScheduledStation(regionKey, name, day.date, scheduleOffset);
             });
         }
@@ -1531,7 +1562,6 @@
                         const db = tails['giải đb'] || [];
                         const g8 = tails['giải tám'] || [];
 
-                        // Một kỳ hợp lệ phải có đúng 1 ĐB + 1 G8.
                         if (db.length !== 1 || g8.length !== 1) return;
 
                         analyzedDraws.add(drawKey);
@@ -1584,8 +1614,6 @@
             return { counter, totalNumbers, drawsCount, analyzedDays, analyzedDraws, expectedPerDraw, expectedTotalNumbers };
         }
 
-
-
         function analyzeCombos(allData, combos, stationFilter = 'all', weekdayFilter = 'all') {
             const result = {};
             const analyzedDays = new Set();
@@ -1613,11 +1641,7 @@
             return { result, analyzedDays, analyzedDraws };
         }
 
-
-
         function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate, periodLabel = 'Ngày phân tích', drawsCount = null, totalLabel = 'Tổng số lần') {
-            // Chỉ hiển thị các số thực sự đã xuất hiện (count > 0).
-            // Loại bỏ hoàn toàn các số 0 lần / 0%.
             const sorted = Object.entries(counter)
                 .filter(([num, info]) => info.count > 0)
                 .sort((a, b) => b[1].count - a[1].count);
@@ -1630,8 +1654,11 @@
                 ${drawsCount !== null ? `<div class="box"><div class="val">${drawsCount}</div><div class="lbl">Số kỳ xổ</div></div>` : ''}
             </div>`;
 
+            // FIX #10: check firstDate/lastDate tồn tại trước khi split
+            const firstText = firstDate ? firstDate.split('-').reverse().join('/') : '-';
+            const lastText = lastDate ? lastDate.split('-').reverse().join('/') : '-';
             html += `<div style="text-align:center; color:var(--cyan); margin:10px 0; font-size:0.85rem;">
-                📅 TỪ ${firstDate.split('-').reverse().join('/')} ĐẾN ${lastDate.split('-').reverse().join('/')}
+                📅 TỪ ${firstText} ĐẾN ${lastText}
             </div>`;
 
             html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
@@ -1720,7 +1747,7 @@
             combos.forEach((combo, i) => {
                 const key = combo.join("-");
                 const hits = result[key].days.length;
-                const pct = (hits / daysCount * 100).toFixed(2);
+                const pct = daysCount > 0 ? (hits / daysCount * 100).toFixed(2) : '0.00';
                 html += `<tr><td class="rank">${i + 1}</td><td class="num-highlight">${key}</td><td>${hits} / ${daysCount}</td><td class="percent">${pct}%</td></tr>`;
             });
             html += `</tbody></table>`;
@@ -1739,28 +1766,20 @@
             return html;
         }
 
-        function downloadCSV(data, filename) {
-            let csv = "\uFEFF" + "STT,Số,Số lần\n";
-            data.forEach((item, i) => { csv += `${i + 1},${item[0]},${item[1]}\n`; });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename + '.csv';
-            link.click();
-        }
-
+        // FIX #1: XÓA hàm downloadCSV (dead code, sai kiểu dữ liệu). Chỉ giữ downloadProbabilityCSV.
         function downloadProbabilityCSV(data, filename) {
-            let csv = "\uFEFF" + "STT,Số,Số lần,Xác suất,Ngày xuất hiện\n";
+            let csv = "\uFEFF" + "STT,Số,Số lần,Xác suất,Đài xuất hiện,Ngày xuất hiện\n";
 
-            const totalNumbers = data.reduce((sum, item) => sum + item.count, 0);
+            const totalNumbers = data.reduce((sum, item) => sum + (item.count || 0), 0);
 
             data.forEach((item, i) => {
                 const pct = totalNumbers > 0
                     ? (item.count / totalNumbers * 100).toFixed(2) + "%"
                     : "0%";
 
-                const dates = `"${item.dates.replace(/"/g, '""')}"`;
-                csv += `${i + 1},${item.num},${item.count},${pct},${dates}\n`;
+                const stations = `"${String(item.stations || '-').replace(/"/g, '""')}"`;
+                const dates = `"${String(item.dates || '-').replace(/"/g, '""')}"`;
+                csv += `${i + 1},${item.num},${item.count},${pct},${stations},${dates}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1769,13 +1788,12 @@
             link.download = filename + '.csv';
             link.click();
 
-            URL.revokeObjectURL(link.href);
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
         }
 
         btnAnalyze.addEventListener('click', async () => {
             const type = probType.value;
             const region = probRegion.value;
-            // Miền Bắc không dùng bộ lọc THỨ; giữ nguyên logic chọn đài cũ.
             const weekdayFilter = region === 'bac' ? 'all' : probWeekday.value;
             const stationFilter = region === 'bac' ? probStation.value : (weekdayFilter === 'all' ? 'all' : probStation.value);
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
@@ -1796,8 +1814,6 @@
                 }
             }
 
-            // Cặp/Bộ 3 chỉ bắt buộc nhập số khi người dùng chọn riêng loại đó.
-            // Với MB + Tất cả, nhập số là tùy chọn; không nhập vẫn chạy 2 số + 3 số.
             if (region === 'bac' && (type === 'cap' || type === 'bo3') && !probExtra.value.trim()) {
                 showProbStatus('error', 'VUI LÒNG NHẬP CẶP/BỘ 3 SỐ');
                 return;
@@ -1831,7 +1847,9 @@
                     return {
                         html: renderTailResult(
                             data.counter, data.totalNumbers, tailLen, regionLabel,
-                            data.analyzedDays.size, dates[0], dates[dates.length - 1],
+                            data.analyzedDays.size,
+                            dates[0] || null,
+                            dates[dates.length - 1] || null,
                             'Ngày có dữ liệu', data.drawsCount, 'Tổng số mẫu'
                         ),
                         drawsCount: data.drawsCount,
@@ -1848,7 +1866,9 @@
                         html: renderTailResult(
                             data.counter, data.totalNumbers, 2,
                             'ĐB + G8 (Miền Trung + Miền Nam)',
-                            data.analyzedDays.size, dates[0], dates[dates.length - 1],
+                            data.analyzedDays.size,
+                            dates[0] || null,
+                            dates[dates.length - 1] || null,
                             'Ngày có kỳ xổ', data.analyzedDraws.size, 'Tổng mẫu'
                         ),
                         drawsCount: data.analyzedDraws.size,

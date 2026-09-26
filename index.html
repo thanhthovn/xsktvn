@@ -1249,6 +1249,10 @@
         updateProbabilityTypes();
         updateProbabilityExtra();
 
+        // Đồng bộ giao diện chế độ ngay khi trang vừa khởi tạo.
+        // Mặc định là Từ đầu năm => ẩn hoàn toàn ô SỐ NGÀY.
+        switchRangeMode();
+
         function getDatesToLoad() {
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
             const allSorted = Array.from(availableDates).sort().reverse();

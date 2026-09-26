@@ -673,8 +673,9 @@
                     <option value="bac">Miền Bắc</option>
                 </select>
 
-                <label>THỨ</label>
-                <select id="probWeekday">
+                <div id="probWeekdayGroup">
+                    <label>THỨ</label>
+                    <select id="probWeekday">
                     <option value="all">Cả tuần</option>
                     <option value="1">Thứ 2</option>
                     <option value="2">Thứ 3</option>
@@ -682,7 +683,8 @@
                     <option value="4">Thứ 5</option>
                     <option value="5">Thứ 6</option>
                     <option value="6">Thứ 7</option>
-                </select>
+                    </select>
+                </div>
 
                 <div id="probStationGroup" style="display:none;">
                     <label>ĐÀI</label>
@@ -754,7 +756,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.0.0
+            &nbsp;|&nbsp; VERSION 8.0.1
         </div>
     </div>
 
@@ -1158,6 +1160,24 @@
         function updateStationDropdown() {
             const region = probRegion.value;
             const weekday = probWeekday.value;
+
+            // MIỀN BẮC giữ nguyên logic cũ: mỗi ngày chỉ có 1 đài,
+            // không áp dụng bộ lọc THỨ. Vẫn cho phép chọn đài MB như trước.
+            if (region === 'bac') {
+                if (probWeekdayGroup) probWeekdayGroup.style.display = 'none';
+                if (probStationGroup) probStationGroup.style.display = '';
+                probStation.innerHTML = '<option value="all">Tất cả đài</option>';
+                (STATIONS_BY_REGION.bac || []).forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    probStation.appendChild(option);
+                });
+                probStation.value = 'all';
+                return;
+            }
+
+            if (probWeekdayGroup) probWeekdayGroup.style.display = '';
 
             if (weekday === 'all') {
                 probStation.value = 'all';
@@ -1709,8 +1729,9 @@
         btnAnalyze.addEventListener('click', async () => {
             const type = probType.value;
             const region = probRegion.value;
-            const weekdayFilter = probWeekday.value;
-            const stationFilter = weekdayFilter === 'all' ? 'all' : probStation.value;
+            // Miền Bắc không dùng bộ lọc THỨ; giữ nguyên logic chọn đài cũ.
+            const weekdayFilter = region === 'bac' ? 'all' : probWeekday.value;
+            const stationFilter = region === 'bac' ? probStation.value : (weekdayFilter === 'all' ? 'all' : probStation.value);
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
 
             if (availableDates.size === 0) {

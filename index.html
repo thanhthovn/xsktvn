@@ -755,7 +755,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.0.2
+            &nbsp;|&nbsp; VERSION 8.0.3
         </div>
     </div>
 
@@ -1475,7 +1475,7 @@
             const counter = {};
             for (let i = 0; i <= 99; i++) {
                 const tail = String(i).padStart(2, '0');
-                counter[tail] = { count: 0, dates: new Set() };
+                counter[tail] = { count: 0, dates: new Set(), stations: new Map() };
             }
 
             let totalNumbers = 0;
@@ -1501,6 +1501,7 @@
                         [db[0], g8[0]].forEach(tail => {
                             counter[tail].count++;
                             counter[tail].dates.add(day.date);
+                            counter[tail].stations.set(st.name, (counter[tail].stations.get(st.name) || 0) + 1);
                             totalNumbers++;
                         });
                     });
@@ -1513,7 +1514,7 @@
         function analyzeTails(allData, regionKey, tailLen, stationFilter = 'all', weekdayFilter = 'all') {
             const counter = {};
             const maxTail = Math.pow(10, tailLen);
-            for (let i = 0; i < maxTail; i++) counter[String(i).padStart(tailLen, '0')] = { count: 0, dates: new Set() };
+            for (let i = 0; i < maxTail; i++) counter[String(i).padStart(tailLen, '0')] = { count: 0, dates: new Set(), stations: new Map() };
             let totalNumbers = 0;
             const analyzedDays = new Set();
             const analyzedDraws = new Set();
@@ -1532,6 +1533,7 @@
                         if (!/^\d+$/.test(tail)) return;
                         counter[tail].count++;
                         counter[tail].dates.add(day.date);
+                        counter[tail].stations.set(st.name, (counter[tail].stations.get(st.name) || 0) + 1);
                         totalNumbers++;
                     });
                 });
@@ -1604,6 +1606,7 @@
                             <th>Số</th>
                             <th>Số lần</th>
                             <th>Xác suất</th>
+                            <th>Đài xuất hiện</th>
                             <th>Ngày xuất hiện</th>
                         </tr>
                     </thead>
@@ -1618,11 +1621,20 @@
                     .map(d => d.split('-').reverse().join('/'));
 
                 const dateText = dates.length > 0 ? dates.join(', ') : '-';
+                const stationText = info.stations && info.stations.size
+                    ? Array.from(info.stations.entries())
+                        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'vi'))
+                        .map(([name, stationCount]) => `${name} (${stationCount})`)
+                        .join(', ')
+                    : '-';
 
                 html += `<tr>
                     <td class="num-highlight">${num}</td>
                     <td>${count}</td>
                     <td class="percent">${pct}%</td>
+                    <td style="text-align:left; min-width:220px; white-space:normal; color:var(--yellow); font-size:0.78rem; line-height:1.7;">
+                        ${stationText}
+                    </td>
                     <td style="text-align:left; min-width:240px; white-space:normal; color:var(--cyan); font-size:0.78rem; line-height:1.7;">
                         ${dateText}
                     </td>
@@ -1634,6 +1646,12 @@
             const csvData = sorted.map(([num, info]) => ({
                 num: num,
                 count: info.count,
+                stations: info.stations && info.stations.size
+                    ? Array.from(info.stations.entries())
+                        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'vi'))
+                        .map(([name, stationCount]) => `${name} (${stationCount})`)
+                        .join(', ')
+                    : '-',
                 dates: Array.from(info.dates)
                     .sort()
                     .map(d => d.split('-').reverse().join('/'))

@@ -695,8 +695,7 @@
 
                 <label>LOẠI</label>
                 <select id="probType">
-                    <option value="all">Tất cả</option>
-                    <option value="2so">2 số đuôi</option>
+                    <option value="2so" selected>2 số đuôi</option>
                     <option value="3so">3 số đuôi</option>
                     <option value="2so_dbg8_mtmn">ĐB + G8</option>
                     <option value="cap">Cặp số</option>
@@ -756,7 +755,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.0.1
+            &nbsp;|&nbsp; VERSION 8.0.2
         </div>
     </div>
 
@@ -1074,14 +1073,9 @@
             const region = probRegion.value;
             const type = probType.value;
             const needsExtra = region === 'bac' && (type === 'cap' || type === 'bo3');
+            probExtraGroup.style.display = needsExtra ? '' : 'none';
 
-            // Với MB + Tất cả: ô nhập là TÙY CHỌN. Có thể chạy 2 số + 3 số
-            // mà không cần nhập cặp/bộ 3; nếu có nhập thì phân tích thêm loại tương ứng.
-            probExtraGroup.style.display = needsExtra || (region === 'bac' && type === 'all') ? '' : 'none';
-
-            if (region === 'bac' && type === 'all') {
-                probExtra.placeholder = 'Tùy chọn: 23-53 hoặc 15-58-69';
-            } else if (type === 'cap') {
+            if (type === 'cap') {
                 probExtra.placeholder = 'VD: 23-53, 15-68';
             } else if (type === 'bo3') {
                 probExtra.placeholder = 'VD: 15-58-69, 12-34-56';
@@ -1095,8 +1089,8 @@
             const currentType = probType.value;
 
             // Loại hợp lệ:
-            // - Miền Nam / Miền Trung: Tất cả, 2 số, 3 số, ĐB + G8.
-            // - Miền Bắc: Tất cả, 2 số, 3 số, Cặp, Bộ 3.
+            // - Miền Nam / Miền Trung: 2 số, 3 số, ĐB + G8.
+            // - Miền Bắc: 2 số, 3 số, Cặp, Bộ 3.
             const mtmnOnlyTypes = new Set(['2so_dbg8_mtmn']);
             const mbOnlyTypes = new Set(['cap', 'bo3']);
 
@@ -1111,18 +1105,13 @@
                 option.disabled = option.hidden;
             });
 
-            // Khi đổi miền, luôn đưa LOẠI về "Tất cả" để tránh giữ
-            // một loại chỉ hợp lệ ở miền trước.
-            if (
-                !['all', '2so', '3so'].includes(currentType) ||
-                (region === 'bac' && currentType === '2so_dbg8_mtmn')
-            ) {
-                probType.value = 'all';
-            } else {
-                // Nếu đang chuyển miền và loại hiện tại không hợp lệ thì về Tất cả.
-                if (region !== 'bac' && (currentType === 'cap' || currentType === 'bo3')) {
-                    probType.value = 'all';
-                }
+            // Khi đổi miền, giữ loại nếu còn hợp lệ; nếu không thì về 2 số.
+            const invalidForRegion =
+                (region === 'bac' && currentType === '2so_dbg8_mtmn') ||
+                (region !== 'bac' && (currentType === 'cap' || currentType === 'bo3'));
+
+            if (invalidForRegion) {
+                probType.value = '2so';
             }
 
             updateProbabilityExtra();
@@ -1151,7 +1140,7 @@
         }
 
         function resetProbabilitySubFilters() {
-            probType.value = 'all';
+            probType.value = '2so';
             probExtra.value = '';
             updateProbabilityTypes();
             updateProbabilityExtra();
@@ -1822,8 +1811,6 @@
 
                         if (requestedType === 'cap' && valid2) capCombos.push(parts);
                         else if (requestedType === 'bo3' && valid3) bo3Combos.push(parts);
-                        else if (requestedType === 'all' && valid2) capCombos.push(parts);
-                        else if (requestedType === 'all' && valid3) bo3Combos.push(parts);
                         else invalid.push(chunk);
                     }
                     return { capCombos, bo3Combos, invalid };
@@ -1839,57 +1826,6 @@
                         drawsCount
                     };
                 };
-
-                // TẤT CẢ = toàn bộ loại hợp lệ của miền.
-                if (type === 'all') {
-                    const sections = [];
-
-                    const addTail = (r, title) => {
-                        if (r) sections.push(`<section class="prob-all-section">
-                            <h3 style="color:var(--yellow); text-align:center; margin:25px 0 10px;">${title}</h3>
-                            ${r.html}
-                        </section>`);
-                    };
-
-                    if (region === 'nam' || region === 'trung') {
-                        addTail(runTail(2), '🎯 2 SỐ ĐUÔI');
-                        addTail(runTail(3), '🎯 3 SỐ ĐUÔI');
-                        const rDbg8 = runDBG8();
-                        if (rDbg8) addTail(rDbg8, '🎯 ĐB + G8');
-                    } else {
-                        addTail(runTail(2), '🎯 2 SỐ ĐUÔI — MIỀN BẮC');
-                        addTail(runTail(3), '🎯 3 SỐ ĐUÔI — MIỀN BẮC');
-
-                        const parsed = parseCombos('all');
-                        if (probExtra.value.trim() && parsed.invalid.length) {
-                            showProbStatus('error', 'SAI ĐỊNH DẠNG CẶP/BỘ 3: ' + parsed.invalid.join(', '));
-                            btnAnalyze.disabled = false;
-                            return;
-                        }
-
-                        const rCap = runCombo(parsed.capCombos);
-                        const rBo3 = runCombo(parsed.bo3Combos);
-                        if (rCap) addTail(rCap, '🎯 CẶP SỐ — MIỀN BẮC');
-                        if (rBo3) addTail(rBo3, '🎯 BỘ 3 SỐ — MIỀN BẮC');
-                    }
-
-                    if (!sections.length) {
-                        showProbStatus('error', 'KHÔNG CÓ KỲ XỔ PHÙ HỢP ĐỂ PHÂN TÍCH');
-                        btnAnalyze.disabled = false;
-                        return;
-                    }
-
-                    probResult.innerHTML = `
-                        <div class="prob-summary">
-                            <div class="box"><div class="val">TẤT CẢ</div><div class="lbl">Loại phân tích</div></div>
-                            <div class="box"><div class="val">${regionLabel}</div><div class="lbl">Phạm vi</div></div>
-                        </div>
-                        ${sections.join('')}`;
-
-                    showProbStatus('success', `HOÀN TẤT :: TẤT CẢ LOẠI HỢP LỆ — ${regionLabel}`);
-                    btnAnalyze.disabled = false;
-                    return;
-                }
 
                 if (type === '2so_dbg8_mtmn') {
                     const data = runDBG8();

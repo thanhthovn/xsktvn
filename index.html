@@ -3174,292 +3174,6 @@
         }
 
 
-        const SCHEDULE_WEEKDAY_OFFSETS =
-            [0, -1, 1];
-
-
-        const _scheduleOffsetCache =
-            new Map();
-
-
-        function detectScheduleOffset(
-            day,
-            regionKey = null,
-            stationFilter = 'all'
-        ) {
-            if (
-                !day ||
-                !day.date ||
-                !Array.isArray(
-                    day.regions
-                )
-            ) {
-                return 0;
-            }
-
-            const cacheKey =
-                `${day.date}|${regionKey || 'all'}|${stationFilter || 'all'}`;
-
-            if (
-                _scheduleOffsetCache.has(
-                    cacheKey
-                )
-            ) {
-                return _scheduleOffsetCache.get(
-                    cacheKey
-                );
-            }
-
-            const actualStations = [];
-
-            day.regions.forEach(
-                region => {
-                    if (
-                        regionKey &&
-                        region.key !==
-                        regionKey
-                    ) {
-                        return;
-                    }
-
-                    if (
-                        ![
-                            'nam',
-                            'trung',
-                            'bac'
-                        ].includes(
-                            region.key
-                        )
-                    ) {
-                        return;
-                    }
-
-                    (
-                        region.stations ||
-                        []
-                    ).forEach(
-                        st => {
-                            const name =
-                                normalizeStationName(
-                                    st.name
-                                );
-
-                            if (name) {
-                                actualStations.push({
-                                    regionKey:
-                                        region.key,
-                                    name
-                                });
-                            }
-                        }
-                    );
-                }
-            );
-
-            if (
-                !actualStations.length
-            ) {
-                _scheduleOffsetCache.set(
-                    cacheKey,
-                    0
-                );
-
-                return 0;
-            }
-
-            // Nếu đang lọc 1 đài cụ thể, chỉ tính offset cho đài đó
-            let stationsToCheck = actualStations;
-
-            if (
-                stationFilter &&
-                stationFilter !== 'all'
-            ) {
-                const wanted =
-                    normalizeStationName(
-                        stationFilter
-                    );
-
-                const filtered =
-                    actualStations.filter(
-                        s => s.name === wanted
-                    );
-
-                if (filtered.length > 0) {
-                    stationsToCheck = filtered;
-                }
-            }
-
-            let bestOffset = 0;
-            let bestScore = -1;
-
-            for (
-                const offset
-                of SCHEDULE_WEEKDAY_OFFSETS
-            ) {
-                const weekday =
-                    getWeekdayUTC(
-                        day.date,
-                        offset
-                    );
-
-                let score = 0;
-
-                stationsToCheck.forEach(
-                    ({
-                        regionKey: rk,
-                        name
-                    }) => {
-                        if (
-                            getScheduledStationsForWeekday(
-                                rk,
-                                weekday
-                            ).some(
-                                x =>
-                                    normalizeStationName(
-                                        x
-                                    ) === name
-                            )
-                        ) {
-                            score++;
-                        }
-                    }
-                );
-
-                if (
-                    score >
-                    bestScore
-                ) {
-                    bestScore =
-                        score;
-
-                    bestOffset =
-                        offset;
-                }
-            }
-
-            _scheduleOffsetCache.set(
-                cacheKey,
-                bestOffset
-            );
-
-            return bestOffset;
-        }
-
-
-        function isScheduledStation(
-            regionKey,
-            stationName,
-            isoDate,
-            scheduleOffset = 0
-        ) {
-            if (
-                !isoDate ||
-                !stationName
-            ) {
-                return false;
-            }
-                      const station =
-                normalizeStationName(
-                    stationName
-                );
-
-            // Thử tất cả offset, không chỉ offset chính
-            const offsetsToTry =
-                [scheduleOffset, 0, -1, 1];
-
-            const tried = new Set();
-
-            for (
-                const offset of offsetsToTry
-            ) {
-                if (tried.has(offset)) continue;
-                tried.add(offset);
-
-                const weekday =
-                    getWeekdayUTC(
-                        isoDate,
-                        offset
-                    );
-
-                if (
-                    weekday === null
-                ) {
-                    continue;
-                }
-
-                if (
-                    getScheduledStationsForWeekday(
-                        regionKey,
-                        weekday
-                    ).some(
-                        name =>
-                            normalizeStationName(
-                                name
-                            ) === station
-                    )
-                ) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-
-        // ============================================================
-        // ĐÃ SỬA:
-        // 0 = CHỦ NHẬT
-        // 1 = THỨ 2
-        // ...
-        // 6 = THỨ 7
-        // ============================================================
-
-        function isProbabilityWeekday(
-            day,
-            probWeekday
-        ) {
-            if (
-                !day ||
-                !day.date
-            ) {
-                return false;
-            }
-
-            if (
-                probWeekday ===
-                    undefined ||
-                probWeekday ===
-                    null ||
-                probWeekday === '' ||
-                probWeekday === 'all'
-            ) {
-                return true;
-            }
-
-            const selected =
-                Number(
-                    probWeekday
-                );
-
-            if (
-                !Number.isInteger(
-                    selected
-                ) ||
-                selected < 0 ||
-                selected > 6
-            ) {
-                return false;
-            }
-
-            return (
-                getWeekdayUTC(
-                    day.date,
-                    0
-                ) === selected
-            );
-        }
-
-
         function getProbabilityDrawKey(
             day,
             regionKey,
@@ -3477,13 +3191,13 @@
         ) {
             if (
                 !day ||
-                !Array.isArray(
-                    day.regions
-                )
+                !Array.isArray(day.regions)
             ) {
                 return [];
             }
 
+            // Khi đã chọn thứ cụ thể, chỉ lấy dữ liệu đúng ngày đó.
+            // Không kiểm tra lịch đài lần 2 vì dropdown đã giới hạn đài theo thứ.
             if (
                 !isProbabilityWeekday(
                     day,
@@ -3493,61 +3207,41 @@
                 return [];
             }
 
-            const wanted =
-                normalizeStationName(
-                    stationFilter
-                );
-
             const region =
                 day.regions.find(
-                    r =>
-                        r.key ===
-                        regionKey
+                    r => r.key === regionKey
                 );
 
             if (
                 !region ||
-                !Array.isArray(
-                    region.stations
-                )
+                !Array.isArray(region.stations)
             ) {
                 return [];
             }
 
-            const scheduleOffset =
-                detectScheduleOffset(
-                    day,
-                    regionKey,
+            if (
+                !stationFilter ||
+                stationFilter === 'all'
+            ) {
+                return region.stations.filter(
+                    st =>
+                        String(st?.name || '').trim()
+                );
+            }
+
+            const wanted =
+                normalizeStationName(
                     stationFilter
                 );
 
             return region.stations.filter(
                 st => {
                     const name =
-                        String(
-                            st.name || ''
-                        ).trim();
+                        String(st?.name || '').trim();
 
-                    if (!name) {
-                        return false;
-                    }
-
-                    if (
-                        stationFilter &&
-                        stationFilter !==
-                            'all' &&
-                        normalizeStationName(
-                            name
-                        ) !== wanted
-                    ) {
-                        return false;
-                    }
-
-                    return isScheduledStation(
-                        regionKey,
-                        name,
-                        day.date,
-                        scheduleOffset
+                    return (
+                        name &&
+                        normalizeStationName(name) === wanted
                     );
                 }
             );

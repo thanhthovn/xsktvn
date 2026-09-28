@@ -3358,21 +3358,23 @@
             ) {
                 return false;
             }
-
             const station =
                 normalizeStationName(
                     stationName
                 );
 
-            // Thử offset chính trước, nếu không khớp thì thử 0
+            // Thử tất cả offset, không chỉ offset chính
             const offsetsToTry =
-                scheduleOffset === 0
-                    ? [0]
-                    : [scheduleOffset, 0];
+                [scheduleOffset, 0, -1, 1];
+
+            const tried = new Set();
 
             for (
                 const offset of offsetsToTry
             ) {
+                if (tried.has(offset)) continue;
+                tried.add(offset);
+
                 const weekday =
                     getWeekdayUTC(
                         isoDate,

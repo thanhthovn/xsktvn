@@ -1095,10 +1095,7 @@
 
                     <select id="probWeekday">
                         <option value="all">Cả tuần</option>
-
-                        <!-- ĐÃ THÊM CHỦ NHẬT -->
                         <option value="0">Chủ nhật</option>
-
                         <option value="1">Thứ 2</option>
                         <option value="2">Thứ 3</option>
                         <option value="3">Thứ 4</option>
@@ -1270,7 +1267,7 @@
 
             &nbsp;|&nbsp;
 
-            VERSION 8.1.5
+            VERSION 8.1.6
         </div>
     </div>
 
@@ -2977,30 +2974,83 @@
 
 
         // ============================================================
-        // CHUẨN HÓA TÊN ĐÀI
+        // ALIAS TÊN ĐÀI — chuẩn hóa các tên hay bị ghi khác trong JSON
         // ============================================================
+        const STATION_ALIASES = {
+            // Miền Trung
+            'thua thien hue': 'hue',
+            'tt hue': 'hue',
+            'tp da nang': 'da nang',
+            'da nang': 'da nang',
+            'dac lac': 'dak lak',
+            'dak lac': 'dak lak',
+            'dac nong': 'dak nong',
+            'dak nong': 'dak nong',
+            'phu yen': 'phu yen',
+            'tuy hoa': 'phu yen',
+            'quang nam': 'quang nam',
+            'quang ngai': 'quang ngai',
+            'quang tri': 'quang tri',
+            'quang binh': 'quang binh',
+            'binh dinh': 'binh dinh',
+            'khanh hoa': 'khanh hoa',
+            'ninh thuan': 'ninh thuan',
+            'gia lai': 'gia lai',
+            'kon tum': 'kon tum',
+
+            // Miền Nam
+            'tp hcm': 'tp hcm',
+            'tphcm': 'tp hcm',
+            'ho chi minh': 'tp hcm',
+            'tp ho chi minh': 'tp hcm',
+            'sai gon': 'tp hcm',
+            'ba ria vung tau': 'vung tau',
+            'ba ria - vung tau': 'vung tau',
+            'vung tau': 'vung tau',
+            'lam dong': 'da lat',
+            'da lat': 'da lat',
+            'dong thap': 'dong thap',
+            'ca mau': 'ca mau',
+            'ben tre': 'ben tre',
+            'bac lieu': 'bac lieu',
+            'dong nai': 'dong nai',
+            'can tho': 'can tho',
+            'soc trang': 'soc trang',
+            'tay ninh': 'tay ninh',
+            'an giang': 'an giang',
+            'binh thuan': 'binh thuan',
+            'vinh long': 'vinh long',
+            'binh duong': 'binh duong',
+            'tra vinh': 'tra vinh',
+            'long an': 'long an',
+            'binh phuoc': 'binh phuoc',
+            'hau giang': 'hau giang',
+            'tien giang': 'tien giang',
+            'kien giang': 'kien giang',
+
+            // Miền Bắc
+            'ha noi': 'ha noi',
+            'tp ha noi': 'ha noi',
+            'quang ninh': 'quang ninh',
+            'bac ninh': 'bac ninh',
+            'hai phong': 'hai phong',
+            'tp hai phong': 'hai phong',
+            'nam dinh': 'nam dinh',
+            'thai binh': 'thai binh'
+        };
+
 
         function normalizeStationName(name) {
-            return String(name || '')
+            const base = String(name || '')
                 .normalize('NFD')
-                .replace(
-                    /[\u0300-\u036f]/g,
-                    ''
-                )
-                .replace(
-                    /đ/g,
-                    'd'
-                )
-                .replace(
-                    /Đ/g,
-                    'D'
-                )
-                .replace(
-                    /[.\s]+/g,
-                    ' '
-                )
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/Đ/g, 'D')
+                .replace(/[.\s]+/g, ' ')
                 .trim()
                 .toLowerCase();
+
+            return STATION_ALIASES[base] || base;
         }
 
 
@@ -3134,7 +3184,8 @@
 
         function detectScheduleOffset(
             day,
-            regionKey = null
+            regionKey = null,
+            stationFilter = 'all'
         ) {
             if (
                 !day ||
@@ -3147,7 +3198,7 @@
             }
 
             const cacheKey =
-                `${day.date}|${regionKey || 'all'}`;
+                `${day.date}|${regionKey || 'all'}|${stationFilter || 'all'}`;
 
             if (
                 _scheduleOffsetCache.has(
@@ -3216,6 +3267,28 @@
                 return 0;
             }
 
+            // Nếu đang lọc 1 đài cụ thể, chỉ tính offset cho đài đó
+            let stationsToCheck = actualStations;
+
+            if (
+                stationFilter &&
+                stationFilter !== 'all'
+            ) {
+                const wanted =
+                    normalizeStationName(
+                        stationFilter
+                    );
+
+                const filtered =
+                    actualStations.filter(
+                        s => s.name === wanted
+                    );
+
+                if (filtered.length > 0) {
+                    stationsToCheck = filtered;
+                }
+            }
+
             let bestOffset = 0;
             let bestScore = -1;
 
@@ -3231,7 +3304,7 @@
 
                 let score = 0;
 
-                actualStations.forEach(
+                stationsToCheck.forEach(
                     ({
                         regionKey: rk,
                         name
@@ -3286,32 +3359,48 @@
                 return false;
             }
 
-            const weekday =
-                getWeekdayUTC(
-                    isoDate,
-                    scheduleOffset
-                );
-
-            if (
-                weekday === null
-            ) {
-                return false;
-            }
-
             const station =
                 normalizeStationName(
                     stationName
                 );
 
-            return getScheduledStationsForWeekday(
-                regionKey,
-                weekday
-            ).some(
-                name =>
-                    normalizeStationName(
-                        name
-                    ) === station
-            );
+            // Thử offset chính trước, nếu không khớp thì thử 0
+            const offsetsToTry =
+                scheduleOffset === 0
+                    ? [0]
+                    : [scheduleOffset, 0];
+
+            for (
+                const offset of offsetsToTry
+            ) {
+                const weekday =
+                    getWeekdayUTC(
+                        isoDate,
+                        offset
+                    );
+
+                if (
+                    weekday === null
+                ) {
+                    continue;
+                }
+
+                if (
+                    getScheduledStationsForWeekday(
+                        regionKey,
+                        weekday
+                    ).some(
+                        name =>
+                            normalizeStationName(
+                                name
+                            ) === station
+                    )
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
 
@@ -3350,8 +3439,6 @@
                     probWeekday
                 );
 
-            // QUAN TRỌNG:
-            // Cho phép 0 = Chủ nhật
             if (
                 !Number.isInteger(
                     selected
@@ -3428,7 +3515,8 @@
             const scheduleOffset =
                 detectScheduleOffset(
                     day,
-                    regionKey
+                    regionKey,
+                    stationFilter
                 );
 
             return region.stations.filter(

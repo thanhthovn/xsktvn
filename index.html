@@ -676,13 +676,14 @@
                 <div id="probWeekdayGroup">
                     <label>THỨ</label>
                     <select id="probWeekday">
-                    <option value="all">Cả tuần</option>
-                    <option value="1">Thứ 2</option>
-                    <option value="2">Thứ 3</option>
-                    <option value="3">Thứ 4</option>
-                    <option value="4">Thứ 5</option>
-                    <option value="5">Thứ 6</option>
-                    <option value="6">Thứ 7</option>
+                        <option value="all">Cả tuần</option>
+                        <option value="0">Chủ Nhật</option>
+                        <option value="1">Thứ 2</option>
+                        <option value="2">Thứ 3</option>
+                        <option value="3">Thứ 4</option>
+                        <option value="4">Thứ 5</option>
+                        <option value="5">Thứ 6</option>
+                        <option value="6">Thứ 7</option>
                     </select>
                 </div>
 
@@ -759,7 +760,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.2.4
+            &nbsp;|&nbsp; VERSION 8.2.5
         </div>
     </div>
 
@@ -1165,7 +1166,15 @@
         // QUẢN LÝ ĐÀI THEO MIỀN + THỨ
         // ============================================================
         function getWeekdayLabel(value) {
-            const labels = { '1':'Thứ 2', '2':'Thứ 3', '3':'Thứ 4', '4':'Thứ 5', '5':'Thứ 6', '6':'Thứ 7' };
+            const labels = {
+                '0': 'Chủ Nhật',
+                '1': 'Thứ 2',
+                '2': 'Thứ 3',
+                '3': 'Thứ 4',
+                '4': 'Thứ 5',
+                '5': 'Thứ 6',
+                '6': 'Thứ 7'
+            };
             return labels[value] || '';
         }
 
@@ -1483,11 +1492,12 @@
             return getScheduledStationsForWeekday(regionKey, weekday).some(name => normalizeStationName(name) === station);
         }
 
+        // FIX #4: Cho phép value = '0' (Chủ Nhật)
         function isProbabilityWeekday(day, probWeekday) {
             if (!day || !day.date) return false;
             if (probWeekday === undefined || probWeekday === null || probWeekday === '' || probWeekday === 'all') return true;
             const selected = Number(probWeekday);
-            if (!Number.isInteger(selected) || selected < 1 || selected > 6) return false;
+            if (!Number.isInteger(selected) || selected < 0 || selected > 6) return false;
             return getWeekdayUTC(day.date, 0) === selected;
         }
 

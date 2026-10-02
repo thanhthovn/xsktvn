@@ -702,6 +702,16 @@
                     <option value="cap">Cặp số Đá</option>
                     <option value="bo3">Bộ 03 số Đá Vòng</option>
                 </select>
+
+                <label>HIỂN THỊ</label>
+                <select id="probLimit">
+                    <option value="10">TOP 10</option>
+                    <option value="20">TOP 20</option>
+                    <option value="50" selected>TOP 50</option>
+                    <option value="100">TOP 100</option>
+                    <option value="200">TOP 200</option>
+                    <option value="0">Tất cả</option>
+                </select>
             </div>
 
             <div class="prob-form">
@@ -760,7 +770,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.3.2
+            &nbsp;|&nbsp; VERSION 8.3.3
         </div>
     </div>
 
@@ -810,6 +820,7 @@
         const probDays = document.getElementById('probDays');
         const probExtra = document.getElementById('probExtra');
         const probExtraGroup = document.getElementById('probExtraGroup');
+        const probLimit = document.getElementById('probLimit');
         const btnAnalyze = document.getElementById('btnAnalyze');
 
         const probFromDate = document.getElementById('probFromDate');
@@ -1539,10 +1550,6 @@
 
         const EXPECTED_NUMBERS_PER_DRAW = { nam: 18, trung: 18, bac: 27 };
 
-        // ============================================================
-        // FIX 8.3.2: analyzeTailsDBG8MTMN nhận regionKey cụ thể
-        // (không còn cứng ['nam', 'trung'] nữa)
-        // ============================================================
         function analyzeTailsDBG8MTMN(allData, regionKey, stationFilter = 'all', weekdayFilter = 'all') {
             const counter = {};
             for (let i = 0; i <= 99; i++) {
@@ -1641,11 +1648,16 @@
             return { result, analyzedDays, analyzedDraws };
         }
 
-        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate, periodLabel = 'Ngày phân tích', drawsCount = null, totalLabel = 'Tổng số lần') {
+        // ============================================================
+        // renderTailResult: nhận thêm tham số `limit`
+        // limit = 0 → hiển thị tất cả
+        // ============================================================
+        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate, periodLabel = 'Ngày phân tích', drawsCount = null, totalLabel = 'Tổng số lần', limit = 50) {
             const sorted = Object.entries(counter)
                 .filter(([num, info]) => info.count > 0)
                 .sort((a, b) => b[1].count - a[1].count);
-            const top = sorted.slice(0, 30);
+            const top = limit > 0 ? sorted.slice(0, limit) : sorted;
+            const topLabel = limit > 0 ? `TOP ${limit}` : 'TẤT CẢ';
 
             let html = `<div class="prob-summary">
                 <div class="box"><div class="val">${totalNumbers.toLocaleString()}</div><div class="lbl">${totalLabel}</div></div>
@@ -1661,7 +1673,7 @@
             </div>`;
 
             html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
-                📊 TOP 30 SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}
+                📊 ${topLabel} SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}
             </h3>`;
 
             html += `<div style="overflow-x:auto;">
@@ -1795,6 +1807,7 @@
             const weekdayFilter = region === 'bac' ? 'all' : probWeekday.value;
             const stationFilter = region === 'bac' ? probStation.value : (weekdayFilter === 'all' ? 'all' : probStation.value);
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
+            const limit = parseInt(probLimit.value, 10);
 
             if (availableDates.size === 0) {
                 showProbStatus('error', 'CHƯA CÓ DỮ LIỆU');
@@ -1848,16 +1861,14 @@
                             data.analyzedDays.size,
                             dates[0] || null,
                             dates[dates.length - 1] || null,
-                            'Ngày có dữ liệu', data.drawsCount, 'Tổng số mẫu'
+                            'Ngày có dữ liệu', data.drawsCount, 'Tổng số mẫu',
+                            limit
                         ),
                         drawsCount: data.drawsCount,
                         totalNumbers: data.totalNumbers
                     };
                 };
 
-                // ============================================================
-                // FIX 8.3.2: runDBG8 chỉ tính theo region đã chọn (nam hoặc trung)
-                // ============================================================
                 const runDBG8 = () => {
                     if (region === 'bac') return null;
                     const data = analyzeTailsDBG8MTMN(allData, region, stationFilter, weekdayFilter);
@@ -1871,7 +1882,8 @@
                             data.analyzedDays.size,
                             dates[0] || null,
                             dates[dates.length - 1] || null,
-                            'Ngày có kỳ xổ', data.analyzedDraws.size, 'Tổng mẫu'
+                            'Ngày có kỳ xổ', data.analyzedDraws.size, 'Tổng mẫu',
+                            limit
                         ),
                         drawsCount: data.analyzedDraws.size,
                         totalNumbers: data.totalNumbers

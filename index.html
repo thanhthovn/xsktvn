@@ -551,25 +551,6 @@
         }
         .prob-table .percent { color: var(--cyan); font-weight: 700; }
 
-        .prob-summary {
-            display: flex; justify-content: center; gap: 15px;
-            flex-wrap: wrap; margin: 15px 0;
-        }
-        .prob-summary .box {
-            background: rgba(255, 215, 0, 0.05);
-            border: 1px solid var(--yellow);
-            border-radius: 3px; padding: 10px 18px;
-            text-align: center; min-width: 140px;
-        }
-        .prob-summary .box .val {
-            font-size: 1.4rem; font-weight: 800; color: var(--yellow);
-            text-shadow: 0 0 8px var(--yellow);
-        }
-        .prob-summary .box .lbl {
-            font-size: 0.7rem; color: var(--yellow); opacity: 0.8;
-            text-transform: uppercase; margin-top: 3px;
-        }
-
         .footer {
             text-align: center; margin-top: 30px;
             font-size: 0.75rem; color: var(--green-dim);
@@ -676,15 +657,15 @@
                 <div id="probWeekdayGroup">
                     <label>THỨ</label>
                     <select id="probWeekday">
-    <option value="all">Cả tuần</option>
-    <option value="1">Thứ 2</option>
-    <option value="2">Thứ 3</option>
-    <option value="3">Thứ 4</option>
-    <option value="4">Thứ 5</option>
-    <option value="5">Thứ 6</option>
-    <option value="6">Thứ 7</option>
-    <option value="0">Chủ Nhật</option>
-</select>
+                        <option value="all">Cả tuần</option>
+                        <option value="1">Thứ 2</option>
+                        <option value="2">Thứ 3</option>
+                        <option value="3">Thứ 4</option>
+                        <option value="4">Thứ 5</option>
+                        <option value="5">Thứ 6</option>
+                        <option value="6">Thứ 7</option>
+                        <option value="0">Chủ Nhật</option>
+                    </select>
                 </div>
 
                 <div id="probStationGroup" style="display:none;">
@@ -770,7 +751,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.3.4
+            &nbsp;|&nbsp; VERSION 8.3.5
         </div>
     </div>
 
@@ -1649,26 +1630,24 @@
         }
 
         // ============================================================
-        // renderTailResult: nhận thêm tham số `limit`
-        // limit = 0 → hiển thị tất cả
+        // renderTailResult: đã bỏ khối prob-summary
         // ============================================================
-        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, daysCount, firstDate, lastDate, periodLabel = 'Ngày phân tích', drawsCount = null, totalLabel = 'Tổng số lần', limit = 50) {
+        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, limit = 50) {
             const sorted = Object.entries(counter)
                 .filter(([num, info]) => info.count > 0)
                 .sort((a, b) => b[1].count - a[1].count);
             const top = limit > 0 ? sorted.slice(0, limit) : sorted;
             const topLabel = limit > 0 ? `TOP ${limit}` : 'TẤT CẢ';
 
-            let html = `<div class="prob-summary">
-                <div class="box"><div class="val">${totalNumbers.toLocaleString()}</div><div class="lbl">${totalLabel}</div></div>
-                <div class="box"><div class="val">${sorted.length}</div><div class="lbl">Số khác nhau</div></div>
-                <div class="box"><div class="val">${daysCount}</div><div class="lbl">${periodLabel}</div></div>
-                ${drawsCount !== null ? `<div class="box"><div class="val">${drawsCount}</div><div class="lbl">Số kỳ xổ</div></div>` : ''}
-            </div>`;
-
+            const sortedDates = Array.from(
+                sorted.flatMap(([, info]) => Array.from(info.dates))
+            ).sort();
+            const firstDate = sortedDates[0] || null;
+            const lastDate = sortedDates[sortedDates.length - 1] || null;
             const firstText = firstDate ? firstDate.split('-').reverse().join('/') : '-';
             const lastText = lastDate ? lastDate.split('-').reverse().join('/') : '-';
-            html += `<div style="text-align:center; color:var(--cyan); margin:10px 0; font-size:0.85rem;">
+
+            let html = `<div style="text-align:center; color:var(--cyan); margin:15px 0; font-size:0.85rem;">
                 📅 TỪ ${firstText} ĐẾN ${lastText}
             </div>`;
 
@@ -1689,7 +1668,7 @@
                     </thead>
                     <tbody>`;
 
-            top.forEach((item, i) => {
+            top.forEach((item) => {
                 const [num, info] = item;
                 const count = info.count;
                 const pct = (count / totalNumbers * 100).toFixed(2);
@@ -1744,11 +1723,11 @@
             return html;
         }
 
-        function renderComboResult(result, combos, daysCount, periodLabel = 'Ngày phân tích') {
-            let html = `<div class="prob-summary">
-                <div class="box"><div class="val">${combos.length}</div><div class="lbl">Số bộ</div></div>
-                <div class="box"><div class="val">${daysCount}</div><div class="lbl">${periodLabel}</div></div>
-            </div>`;
+        // ============================================================
+        // renderComboResult: đã bỏ khối prob-summary
+        // ============================================================
+        function renderComboResult(result, combos, daysCount) {
+            let html = '';
 
             const size = combos[0].length;
             const title = size === 2 ? '🎲 XÁC SUẤT CẶP SỐ — MIỀN BẮC' : '🎲 XÁC SUẤT BỘ 3 SỐ — MIỀN BẮC';
@@ -1854,15 +1833,9 @@
                 const runTail = (tailLen) => {
                     const data = analyzeTails(allData, region, tailLen, stationFilter, weekdayFilter);
                     if (!data.totalNumbers) return null;
-                    const dates = Array.from(data.analyzedDays).sort();
                     return {
                         html: renderTailResult(
-                            data.counter, data.totalNumbers, tailLen, regionLabel,
-                            data.analyzedDays.size,
-                            dates[0] || null,
-                            dates[dates.length - 1] || null,
-                            'Ngày có dữ liệu', data.drawsCount, 'Tổng số mẫu',
-                            limit
+                            data.counter, data.totalNumbers, tailLen, regionLabel, limit
                         ),
                         drawsCount: data.drawsCount,
                         totalNumbers: data.totalNumbers
@@ -1873,17 +1846,10 @@
                     if (region === 'bac') return null;
                     const data = analyzeTailsDBG8MTMN(allData, region, stationFilter, weekdayFilter);
                     if (!data.totalNumbers) return null;
-                    const dates = Array.from(data.analyzedDays).sort();
                     const dbg8Label = `ĐB + G8 — ${regionNames[region]}`;
                     return {
                         html: renderTailResult(
-                            data.counter, data.totalNumbers, 2,
-                            dbg8Label,
-                            data.analyzedDays.size,
-                            dates[0] || null,
-                            dates[dates.length - 1] || null,
-                            'Ngày có kỳ xổ', data.analyzedDraws.size, 'Tổng mẫu',
-                            limit
+                            data.counter, data.totalNumbers, 2, dbg8Label, limit
                         ),
                         drawsCount: data.analyzedDraws.size,
                         totalNumbers: data.totalNumbers
@@ -1913,7 +1879,7 @@
                     const drawsCount = data.analyzedDraws.size;
                     if (!drawsCount) return null;
                     return {
-                        html: renderComboResult(data.result, combos, drawsCount, 'Kỳ có dữ liệu'),
+                        html: renderComboResult(data.result, combos, drawsCount),
                         drawsCount
                     };
                 };

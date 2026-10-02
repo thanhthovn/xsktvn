@@ -760,7 +760,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.2.5
+            &nbsp;|&nbsp; VERSION 8.3.0
         </div>
     </div>
 
@@ -997,7 +997,6 @@
                 }
             } catch (err) {
                 console.warn(err);
-                // FIX: reset state khi index.json lỗi để tránh stale data
                 availableDates = new Set();
                 statsBox.style.display = 'none';
                 calendarSection.style.display = 'none';
@@ -1073,7 +1072,6 @@
             resultBox.innerHTML = html;
         }
 
-        // FIX #3: dùng AbortController để tránh race condition khi user đổi ngày liên tục
         let loadResultController = null;
 
         async function loadResult(isoDate) {
@@ -1081,7 +1079,6 @@
             showStatus('loading', 'LOADING_DATA...');
             resultBox.innerHTML = '';
 
-            // Hủy request cũ nếu có
             if (loadResultController) {
                 try { loadResultController.abort(); } catch (e) {}
             }
@@ -1093,12 +1090,11 @@
                 const res = await fetch(`data/${year}/${isoDate}.json?_=${Date.now()}`, { signal });
                 if (!res.ok) throw new Error('NO_DATA_FOR_THIS_DATE');
                 const data = await res.json();
-                // Kiểm tra race: nếu user đã đổi ngày trong lúc fetch, bỏ qua response
                 if (currentIsoDate !== isoDate) return;
                 renderResult(data);
                 statusBox.style.display = 'none';
             } catch (err) {
-                if (err.name === 'AbortError') return; // request bị hủy, không phải lỗi
+                if (err.name === 'AbortError') return;
                 if (currentIsoDate !== isoDate) return;
                 if (err.message === 'NO_DATA_FOR_THIS_DATE') {
                     const todayVN = getRealTodayVN();
@@ -1310,7 +1306,6 @@
             }
         }
 
-        // FIX #3: Fetch song song có giới hạn concurrency (thay vì tuần tự)
         async function fetchWithConcurrency(items, worker, limit = 16) {
             const results = new Array(items.length);
             let cursor = 0;
@@ -1344,7 +1339,6 @@
             let loaded = 0;
             const total = datesToLoad.length;
 
-            // Cập nhật tiến độ mỗi 10 file
             const tick = () => {
                 loaded++;
                 if (loaded % 10 === 0 || loaded === total) {
@@ -1371,7 +1365,6 @@
                 16
             );
 
-            // Giữ thứ tự ngày tăng dần (getDatesToLoad trả về mới -> cũ, ta đảo lại cho tự nhiên)
             for (const r of results) {
                 if (r) allData.push(r);
             }
@@ -1381,26 +1374,29 @@
         // ============================================================
         // LỊCH XỔ CỐ ĐỊNH CỦA CÁC ĐÀI
         // ============================================================
+        // Lịch miền Trung (đã cập nhật theo dữ liệu thực tế)
         const STATIONS_BY_WEEKDAY_MT = {
-            0: ["Phú Yên", "Huế"],
-            1: ["Đắk Lắk", "Quảng Nam"],
-            2: ["Đà Nẵng", "Khánh Hòa"],
-            3: ["Bình Định", "Quảng Trị", "Quảng Bình"],
-            4: ["Gia Lai", "Ninh Thuận"],
-            5: ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"],
-            6: ["Kon Tum", "Huế", "Khánh Hòa"],
+            0: ["Kon Tum", "Huế", "Khánh Hòa"],
+            1: ["Phú Yên", "Huế"],
+            2: ["Đắk Lắk", "Quảng Nam"],
+            3: ["Đà Nẵng", "Khánh Hòa"],
+            4: ["Bình Định", "Quảng Trị", "Quảng Bình"],
+            5: ["Gia Lai", "Ninh Thuận"],
+            6: ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"],
         };
 
+        // Lịch miền Bắc (đã sửa lại theo thực tế)
         const STATIONS_BY_WEEKDAY_MB = {
-            0: "Hà Nội",
-            1: "Quảng Ninh",
-            2: "Bắc Ninh",
-            3: "Hà Nội",
-            4: "Hải Phòng",
-            5: "Nam Định",
-            6: "Thái Bình",
+            0: "Thái Bình",
+            1: "Hà Nội",
+            2: "Quảng Ninh",
+            3: "Bắc Ninh",
+            4: "Hà Nội",
+            5: "Hải Phòng",
+            6: "Nam Định",
         };
 
+        // Lịch miền Nam (giữ nguyên, đã đúng)
         const STATIONS_BY_WEEKDAY_MN = {
             0: ["Tiền Giang", "Kiên Giang", "Đà Lạt"],
             1: ["TP. HCM", "Đồng Tháp", "Cà Mau"],
@@ -1411,13 +1407,12 @@
             6: ["TP. HCM", "Long An", "Bình Phước", "Hậu Giang"],
         };
 
-        // FIX #2: Chuẩn hóa tên đài — bỏ dấu tiếng Việt, bỏ dấu chấm, gộp khoảng trắng
         function normalizeStationName(name) {
             return String(name || '')
                 .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')   // bỏ dấu
+                .replace(/[\u0300-\u036f]/g, '')
                 .replace(/đ/g, 'd').replace(/Đ/g, 'D')
-                .replace(/[.\s]+/g, ' ')            // gộp dấu chấm + khoảng trắng
+                .replace(/[.\s]+/g, ' ')
                 .trim()
                 .toLowerCase();
         }
@@ -1450,7 +1445,6 @@
 
         const SCHEDULE_WEEKDAY_OFFSETS = [0, -1, 1];
 
-        // Cache detectScheduleOffset theo key "date|regionKey" để tránh tính lặp
         const _scheduleOffsetCache = new Map();
 
         function detectScheduleOffset(day, regionKey = null) {
@@ -1492,28 +1486,26 @@
             return getScheduledStationsForWeekday(regionKey, weekday).some(name => normalizeStationName(name) === station);
         }
 
-        // FIX #4: Cho phép value = '0' (Chủ Nhật)
-        function isProbabilityWeekday(day, probWeekday) {
-            if (!day || !day.date) return false;
-            if (probWeekday === undefined || probWeekday === null || probWeekday === '' || probWeekday === 'all') return true;
-            const selected = Number(probWeekday);
-            if (!Number.isInteger(selected) || selected < 0 || selected > 6) return false;
-            return getWeekdayUTC(day.date, 0) === selected;
-        }
-
-        function getProbabilityDrawKey(day, regionKey, stationName) {
-            return `${day.date}|${regionKey}|${normalizeStationName(stationName)}`;
-        }
-
+        // ============================================================
+        // FIX CHÍNH: dùng CÙNG scheduleOffset cho cả bước lọc theo thứ
+        // ============================================================
         function getStationByRegion(day, regionKey, stationFilter = 'all', weekdayFilter = 'all') {
             if (!day || !Array.isArray(day.regions)) return [];
-            if (!isProbabilityWeekday(day, weekdayFilter)) return [];
+
+            // Detect offset trước — dùng chung cho cả weekday check và station check
+            const scheduleOffset = detectScheduleOffset(day, regionKey);
+
+            // Check weekday bằng cùng offset đã detect (thay vì offset cứng = 0)
+            if (weekdayFilter !== 'all' && weekdayFilter !== undefined && weekdayFilter !== null && weekdayFilter !== '') {
+                const selected = Number(weekdayFilter);
+                if (Number.isInteger(selected) && selected >= 0 && selected <= 6) {
+                    if (getWeekdayUTC(day.date, scheduleOffset) !== selected) return [];
+                }
+            }
 
             const wanted = normalizeStationName(stationFilter);
             const region = day.regions.find(r => r.key === regionKey);
             if (!region || !Array.isArray(region.stations)) return [];
-
-            const scheduleOffset = detectScheduleOffset(day, regionKey);
 
             return region.stations.filter(st => {
                 const name = String(st.name || '').trim();
@@ -1664,7 +1656,6 @@
                 ${drawsCount !== null ? `<div class="box"><div class="val">${drawsCount}</div><div class="lbl">Số kỳ xổ</div></div>` : ''}
             </div>`;
 
-            // FIX #10: check firstDate/lastDate tồn tại trước khi split
             const firstText = firstDate ? firstDate.split('-').reverse().join('/') : '-';
             const lastText = lastDate ? lastDate.split('-').reverse().join('/') : '-';
             html += `<div style="text-align:center; color:var(--cyan); margin:10px 0; font-size:0.85rem;">
@@ -1776,7 +1767,6 @@
             return html;
         }
 
-        // FIX #1: XÓA hàm downloadCSV (dead code, sai kiểu dữ liệu). Chỉ giữ downloadProbabilityCSV.
         function downloadProbabilityCSV(data, filename) {
             let csv = "\uFEFF" + "STT,Số,Số lần,Xác suất,Đài xuất hiện,Ngày xuất hiện\n";
 

@@ -760,7 +760,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.3.0
+            &nbsp;|&nbsp; VERSION 8.3.1
         </div>
     </div>
 
@@ -1484,6 +1484,13 @@
             if (weekday === null) return false;
             const station = normalizeStationName(stationName);
             return getScheduledStationsForWeekday(regionKey, weekday).some(name => normalizeStationName(name) === station);
+        }
+
+        // ============================================================
+        // FIX: hàm tạo key duy nhất cho mỗi kỳ xổ (bị thiếu trong bản trước)
+        // ============================================================
+        function getProbabilityDrawKey(day, regionKey, stationName) {
+            return `${day.date}|${regionKey}|${normalizeStationName(stationName)}`;
         }
 
         // ============================================================

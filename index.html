@@ -760,7 +760,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.3.1
+            &nbsp;|&nbsp; VERSION 8.3.2
         </div>
     </div>
 
@@ -1374,7 +1374,6 @@
         // ============================================================
         // LỊCH XỔ CỐ ĐỊNH CỦA CÁC ĐÀI
         // ============================================================
-        // Lịch miền Trung (đã cập nhật theo dữ liệu thực tế)
         const STATIONS_BY_WEEKDAY_MT = {
             0: ["Kon Tum", "Huế", "Khánh Hòa"],
             1: ["Phú Yên", "Huế"],
@@ -1385,7 +1384,6 @@
             6: ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"],
         };
 
-        // Lịch miền Bắc (đã sửa lại theo thực tế)
         const STATIONS_BY_WEEKDAY_MB = {
             0: "Thái Bình",
             1: "Hà Nội",
@@ -1396,7 +1394,6 @@
             6: "Nam Định",
         };
 
-        // Lịch miền Nam (giữ nguyên, đã đúng)
         const STATIONS_BY_WEEKDAY_MN = {
             0: ["Tiền Giang", "Kiên Giang", "Đà Lạt"],
             1: ["TP. HCM", "Đồng Tháp", "Cà Mau"],
@@ -1486,23 +1483,15 @@
             return getScheduledStationsForWeekday(regionKey, weekday).some(name => normalizeStationName(name) === station);
         }
 
-        // ============================================================
-        // FIX: hàm tạo key duy nhất cho mỗi kỳ xổ (bị thiếu trong bản trước)
-        // ============================================================
         function getProbabilityDrawKey(day, regionKey, stationName) {
             return `${day.date}|${regionKey}|${normalizeStationName(stationName)}`;
         }
 
-        // ============================================================
-        // FIX CHÍNH: dùng CÙNG scheduleOffset cho cả bước lọc theo thứ
-        // ============================================================
         function getStationByRegion(day, regionKey, stationFilter = 'all', weekdayFilter = 'all') {
             if (!day || !Array.isArray(day.regions)) return [];
 
-            // Detect offset trước — dùng chung cho cả weekday check và station check
             const scheduleOffset = detectScheduleOffset(day, regionKey);
 
-            // Check weekday bằng cùng offset đã detect (thay vì offset cứng = 0)
             if (weekdayFilter !== 'all' && weekdayFilter !== undefined && weekdayFilter !== null && weekdayFilter !== '') {
                 const selected = Number(weekdayFilter);
                 if (Number.isInteger(selected) && selected >= 0 && selected <= 6) {
@@ -1550,7 +1539,11 @@
 
         const EXPECTED_NUMBERS_PER_DRAW = { nam: 18, trung: 18, bac: 27 };
 
-        function analyzeTailsDBG8MTMN(allData, stationFilter = 'all', weekdayFilter = 'all') {
+        // ============================================================
+        // FIX 8.3.2: analyzeTailsDBG8MTMN nhận regionKey cụ thể
+        // (không còn cứng ['nam', 'trung'] nữa)
+        // ============================================================
+        function analyzeTailsDBG8MTMN(allData, regionKey, stationFilter = 'all', weekdayFilter = 'all') {
             const counter = {};
             for (let i = 0; i <= 99; i++) {
                 const tail = String(i).padStart(2, '0');
@@ -1562,26 +1555,24 @@
             const analyzedDraws = new Set();
 
             (allData || []).forEach(day => {
-                ['nam', 'trung'].forEach(regionKey => {
-                    getStationByRegion(day, regionKey, stationFilter, weekdayFilter).forEach(st => {
-                        const drawKey = getProbabilityDrawKey(day, regionKey, st.name);
-                        if (analyzedDraws.has(drawKey)) return;
+                getStationByRegion(day, regionKey, stationFilter, weekdayFilter).forEach(st => {
+                    const drawKey = getProbabilityDrawKey(day, regionKey, st.name);
+                    if (analyzedDraws.has(drawKey)) return;
 
-                        const tails = extractPrizeTails(st, ['Giải ĐB', 'Giải tám']);
-                        const db = tails['giải đb'] || [];
-                        const g8 = tails['giải tám'] || [];
+                    const tails = extractPrizeTails(st, ['Giải ĐB', 'Giải tám']);
+                    const db = tails['giải đb'] || [];
+                    const g8 = tails['giải tám'] || [];
 
-                        if (db.length !== 1 || g8.length !== 1) return;
+                    if (db.length !== 1 || g8.length !== 1) return;
 
-                        analyzedDraws.add(drawKey);
-                        analyzedDays.add(day.date);
+                    analyzedDraws.add(drawKey);
+                    analyzedDays.add(day.date);
 
-                        [db[0], g8[0]].forEach(tail => {
-                            counter[tail].count++;
-                            counter[tail].dates.add(day.date);
-                            counter[tail].stations.set(st.name, (counter[tail].stations.get(st.name) || 0) + 1);
-                            totalNumbers++;
-                        });
+                    [db[0], g8[0]].forEach(tail => {
+                        counter[tail].count++;
+                        counter[tail].dates.add(day.date);
+                        counter[tail].stations.set(st.name, (counter[tail].stations.get(st.name) || 0) + 1);
+                        totalNumbers++;
                     });
                 });
             });
@@ -1864,15 +1855,19 @@
                     };
                 };
 
+                // ============================================================
+                // FIX 8.3.2: runDBG8 chỉ tính theo region đã chọn (nam hoặc trung)
+                // ============================================================
                 const runDBG8 = () => {
                     if (region === 'bac') return null;
-                    const data = analyzeTailsDBG8MTMN(allData, stationFilter, weekdayFilter);
+                    const data = analyzeTailsDBG8MTMN(allData, region, stationFilter, weekdayFilter);
                     if (!data.totalNumbers) return null;
                     const dates = Array.from(data.analyzedDays).sort();
+                    const dbg8Label = `ĐB + G8 — ${regionNames[region]}`;
                     return {
                         html: renderTailResult(
                             data.counter, data.totalNumbers, 2,
-                            'ĐB + G8 (Miền Trung + Miền Nam)',
+                            dbg8Label,
                             data.analyzedDays.size,
                             dates[0] || null,
                             dates[dates.length - 1] || null,
@@ -1914,12 +1909,12 @@
                 if (type === '2so_dbg8_mtmn') {
                     const data = runDBG8();
                     if (!data) {
-                        showProbStatus('error', 'KHÔNG CÓ DỮ LIỆU ĐB + G8 CỦA MIỀN TRUNG / MIỀN NAM');
+                        showProbStatus('error', `KHÔNG CÓ DỮ LIỆU ĐB + G8 CỦA ${regionNames[region].toUpperCase()}`);
                         btnAnalyze.disabled = false;
                         return;
                     }
                     probResult.innerHTML = data.html;
-                    showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ XỔ, ${data.totalNumbers.toLocaleString()} MẪU — ĐB + G8 MT + MN${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
+                    showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ XỔ, ${data.totalNumbers.toLocaleString()} MẪU — ĐB + G8 ${regionNames[region].toUpperCase()}${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
                     btnAnalyze.disabled = false;
                     return;
                 }

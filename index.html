@@ -583,6 +583,23 @@
         }
         .prob-table .percent { color: var(--cyan); font-weight: 700; }
 
+        /* ===== TÌM SỐ TRONG KẾT QUẢ PHÂN TÍCH XÁC SUẤT ===== */
+        .prob-find-form {
+            display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+            gap: 10px; margin: 12px 0 18px; padding: 12px;
+            background: rgba(0, 255, 255, 0.035); border: 1px dashed var(--cyan); border-radius: 4px;
+        }
+        .prob-find-form label { color: var(--cyan); font-weight: 700; }
+        .prob-find-form input {
+            width: 150px; padding: 9px 12px; font: inherit; font-weight: 700;
+            color: var(--yellow); background: #151c17; border: 1px solid var(--cyan);
+            border-radius: 3px; outline: none;
+        }
+        .prob-find-form input:focus { box-shadow: 0 0 12px rgba(0,255,255,.45); }
+        .prob-find-message { width: 100%; text-align: center; color: var(--green-dim); font-size: .8rem; }
+        #probResult tr.prob-found-row { outline: 2px solid var(--orange-light); background: rgba(255, 140, 0, .20); }
+        #probResult tr.prob-found-row td { color: #fff !important; }
+
         .footer {
             text-align: center; margin-top: 30px;
             font-size: 0.75rem; color: var(--green-dim);
@@ -786,12 +803,19 @@
             </div>
 
             <div class="status" id="probStatus"></div>
+            <div class="prob-find-form" id="probFindForm">
+                <label for="probFindNumber">🔎 TÌM SỐ TRONG KẾT QUẢ</label>
+                <input type="text" id="probFindNumber" inputmode="numeric" maxlength="20" placeholder="Nhập số / bộ số..." autocomplete="off" />
+                <button type="button" class="btn" id="btnFindProbability">TRỎ TỚI SỐ</button>
+                <button type="button" class="btn" id="btnClearProbabilityFind">XÓA</button>
+                <div class="prob-find-message" id="probFindMessage">Chạy phân tích trước, sau đó nhập số để tìm và cuộn tới dòng kết quả tương ứng.</div>
+            </div>
             <div id="probResult"></div>
         </div>
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.3.7
+            &nbsp;|&nbsp; VERSION 8.3.8
         </div>
     </div>
 
@@ -1868,6 +1892,55 @@
 
             setTimeout(() => URL.revokeObjectURL(link.href), 1000);
         }
+
+        // Tìm số và cuộn tới dòng tương ứng trong bảng KẾT QUẢ PHÂN TÍCH XÁC SUẤT.
+        const probFindNumber = document.getElementById('probFindNumber');
+        const probFindMessage = document.getElementById('probFindMessage');
+
+        function findProbabilityResult() {
+            const query = probFindNumber.value.trim();
+            const rows = Array.from(probResult.querySelectorAll('table.prob-table tbody tr'));
+            rows.forEach(row => row.classList.remove('prob-found-row'));
+
+            if (!query) {
+                probFindMessage.textContent = 'Nhập số hoặc bộ số cần tìm.';
+                return;
+            }
+            if (!rows.length) {
+                probFindMessage.textContent = 'Chưa có kết quả phân tích. Hãy nhấn PHÂN TÍCH trước.';
+                return;
+            }
+
+            const normalize = value => String(value).replace(/\s+/g, '').toLowerCase();
+            const needle = normalize(query);
+            const matches = rows.filter(row => {
+                const cells = Array.from(row.cells);
+                // Ưu tiên tìm chính xác trong cột số/bộ số; nếu không có thì tìm trong toàn dòng.
+                const numberCells = cells.filter((cell, index) => index === 0 || /num-highlight/.test(cell.className));
+                return numberCells.some(cell => normalize(cell.textContent) === needle);
+            });
+            const found = matches.length ? matches : rows.filter(row => normalize(row.textContent).includes(needle));
+
+            if (!found.length) {
+                probFindMessage.textContent = `Không tìm thấy "${query}" trong kết quả đang hiển thị.`;
+                return;
+            }
+
+            found.forEach(row => row.classList.add('prob-found-row'));
+            found[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            probFindMessage.textContent = `Tìm thấy ${found.length} dòng phù hợp. Đã trỏ tới kết quả đầu tiên; các dòng trùng được tô sáng.`;
+        }
+
+        document.getElementById('btnFindProbability').addEventListener('click', findProbabilityResult);
+        probFindNumber.addEventListener('keydown', event => {
+            if (event.key === 'Enter') findProbabilityResult();
+        });
+        document.getElementById('btnClearProbabilityFind').addEventListener('click', () => {
+            probFindNumber.value = '';
+            probResult.querySelectorAll('tr.prob-found-row').forEach(row => row.classList.remove('prob-found-row'));
+            probFindMessage.textContent = 'Đã xóa tìm kiếm.';
+            probFindNumber.focus();
+        });
 
         btnAnalyze.addEventListener('click', async () => {
             const type = probType.value;

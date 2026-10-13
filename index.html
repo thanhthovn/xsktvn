@@ -525,36 +525,6 @@
 
 
 
-        /* ===== TÌM SỐ TRONG KẾT QUẢ ===== */
-        .result-search {
-            display: flex; justify-content: center; align-items: center;
-            flex-wrap: wrap; gap: 10px; margin: 0 0 18px;
-            padding: 12px 15px;
-            background: rgba(0, 255, 255, 0.035);
-            border: 1px solid var(--cyan); border-radius: 4px;
-        }
-        .result-search label {
-            color: var(--cyan); font-weight: 800; letter-spacing: .5px;
-        }
-        .result-search input {
-            width: 150px; padding: 9px 12px; font-size: .95rem;
-            font-family: 'Consolas', 'Courier New', monospace;
-            background: #151c17; color: var(--green);
-            border: 1px solid var(--green); border-radius: 3px;
-            outline: none;
-        }
-        .result-search input:focus { box-shadow: 0 0 10px var(--cyan); border-color: var(--cyan); }
-        .result-search .search-message { color: var(--yellow); font-size: .82rem; }
-        .result-number { display: inline-block; border-radius: 3px; padding: 0 2px; }
-        .result-number.found {
-            color: #111 !important; background: var(--yellow);
-            outline: 2px solid var(--orange); box-shadow: 0 0 12px var(--yellow);
-            text-shadow: none !important;
-        }
-        @media (max-width: 650px) {
-            .result-search input { width: 120px; }
-        }
-
         .prob-table {
             width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 15px;
         }
@@ -658,14 +628,6 @@
 
             <div class="status" id="status"></div>
 
-            <div class="result-search" role="search">
-                <label for="resultNumberInput">TÌM SỐ TRONG KẾT QUẢ</label>
-                <input type="text" id="resultNumberInput" inputmode="numeric" autocomplete="off"
-                       maxlength="5" placeholder="Nhập số cần tìm" aria-label="Nhập số cần tìm trong kết quả">
-                <button type="button" class="btn" id="searchResultNumberBtn" onclick="searchResultNumber()">🔎 TÌM SỐ</button>
-                <button type="button" class="btn" onclick="clearResultNumberSearch()">XÓA</button>
-                <span class="search-message" id="resultSearchMessage" aria-live="polite"></span>
-            </div>
             <div id="result"></div>
 
             <div class="calendar-section" id="calendarSection" style="display:none;">
@@ -815,7 +777,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.3.8
+            &nbsp;|&nbsp; VERSION 8.3.9
         </div>
     </div>
 
@@ -1119,7 +1081,7 @@
                     html += `<div class="${cardClass}"><div class="station-header"><span class="station-name">${st.name}</span><span class="station-code">${st.code || ''}</span></div><table class="prize-table">`;
                     st.prizes.forEach(p => {
                         const cls = p.label === 'Giải ĐB' ? 'prize-numbers special-prize' : 'prize-numbers';
-                        html += `<tr><td class="prize-label">${p.label}</td><td class="${cls}">${p.numbers.map(n => `<span class="result-number" data-number="${String(n).trim()}">${String(n).trim()}</span>`).join(' &nbsp; ')}</td></tr>`;
+                        html += `<tr><td class="prize-label">${p.label}</td><td class="${cls}">${p.numbers.join(' &nbsp; ')}</td></tr>`;
                     });
                     html += `</table></div>`;
                 });
@@ -1128,46 +1090,6 @@
             resultBox.innerHTML = html;
         }
 
-
-        // Tìm chính xác một số trong kết quả của ngày đang mở và cuộn đến số đó.
-        function searchResultNumber() {
-            const input = document.getElementById('resultNumberInput');
-            const message = document.getElementById('resultSearchMessage');
-            const query = input.value.trim();
-
-            document.querySelectorAll('#result .result-number.found').forEach(el => el.classList.remove('found'));
-
-            if (!/^\\d{1,5}$/.test(query)) {
-                message.textContent = 'Nhập số gồm 1–5 chữ số.';
-                input.focus();
-                return;
-            }
-
-            const matches = Array.from(document.querySelectorAll('#result .result-number'))
-                .filter(el => el.dataset.number === query);
-
-            if (!matches.length) {
-                message.textContent = `Không tìm thấy số ${query} trong kết quả ngày ${currentIsoDate.split('-').reverse().join('/')}.`;
-                return;
-            }
-
-            matches.forEach(el => el.classList.add('found'));
-            message.textContent = `Tìm thấy ${matches.length} vị trí của số ${query}.`;
-            matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-        function clearResultNumberSearch() {
-            document.getElementById('resultNumberInput').value = '';
-            document.getElementById('resultSearchMessage').textContent = '';
-            document.querySelectorAll('#result .result-number.found').forEach(el => el.classList.remove('found'));
-        }
-
-        document.getElementById('resultNumberInput').addEventListener('keydown', event => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                searchResultNumber();
-            }
-        });
 
         let loadResultController = null;
 

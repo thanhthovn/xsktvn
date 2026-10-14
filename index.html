@@ -132,14 +132,50 @@
             box-shadow: 0 0 20px rgba(255, 69, 0, 0.7);
         }
 
+        /* Nút xem ý nghĩa đối xứng với nút phân tích xác suất */
+        .meaning-icon-btn {
+            position: absolute; top: 60px; left: 25px;
+            width: 40px; height: 40px; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 1.3rem; background: rgba(53, 208, 111, 0.045);
+            color: var(--green-dim); border: 1px solid var(--green-dim);
+            border-radius: 50%; cursor: pointer; transition: all 0.25s;
+            opacity: 0.65; z-index: 100; font-family: inherit;
+        }
+        .meaning-icon-btn:hover, .meaning-icon-btn.active {
+            opacity: 1; background: rgba(0, 255, 255, 0.12);
+            color: var(--cyan); border-color: var(--cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); transform: scale(1.08);
+        }
+        .meaning-overlay {
+            display: none; position: fixed; inset: 0; z-index: 10000;
+            padding: 20px; background: rgba(0, 0, 0, 0.82);
+            align-items: center; justify-content: center;
+        }
+        .meaning-overlay.open { display: flex; }
+        .meaning-panel {
+            width: min(900px, 100%); max-height: 90vh; overflow: auto;
+            background: #202a23; color: var(--green); border: 2px solid var(--green);
+            box-shadow: 0 0 25px rgba(53,208,111,.22); border-radius: 5px; padding: 20px;
+        }
+        .meaning-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+        .meaning-heading h2 { color:#ff3b3b; font-size:clamp(1.15rem, 3vw, 1.8rem); text-align:center; }
+        .meaning-close { border:1px solid var(--green-dim); color:var(--green); background:#151c17; padding:7px 12px; cursor:pointer; font:inherit; }
+        .meaning-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px 22px; }
+        .meaning-item { padding:5px 3px; font-weight:800; font-size:clamp(.78rem, 1.8vw, 1.05rem); line-height:1.35; }
+        .meaning-item:nth-child(4n+1) { color:#ff4545; }
+        .meaning-item:nth-child(4n+2) { color:#287bd0; }
+        .meaning-item:nth-child(4n+3) { color:#28b84a; }
+        .meaning-item:nth-child(4n) { color:#ff8c32; }
+        .meaning-item.last { grid-column:1 / -1; text-align:center; }
+
         @media (max-width: 650px) {
             .prob-icon-btn {
-                top: 15px;
-                right: 15px;
-                width: 35px;
-                height: 35px;
-                font-size: 1.1rem;
+                top: 15px; right: 15px; width: 35px; height: 35px; font-size: 1.1rem;
             }
+            .meaning-icon-btn { top: 15px; left: 15px; width: 35px; height: 35px; font-size: 1.1rem; }
+            .meaning-panel { padding: 12px; }
+            .meaning-grid { gap: 3px 10px; }
         }
 
         .tab-content { display: none; }
@@ -613,6 +649,7 @@
         </div>
 
         <h1>XSKTVN</h1>
+        <button class="meaning-icon-btn" id="meaningIconBtn" onclick="toggleMeaningPanel(true)" title="Xem ý nghĩa các con số" aria-label="Xem ý nghĩa các con số">📖</button>
         <button class="prob-icon-btn" id="probIconBtn" onclick="toggleProbPanel()" title="Phân tích xác suất">🎲</button>
         <div class="sub-title">KẾT QUẢ XỔ SỐ 03 MIỀN // AUTO-SCRAPED DAILY</div>
 
@@ -775,9 +812,61 @@
             <div id="probResult"></div>
         </div>
 
+        <div class="meaning-overlay" id="meaningOverlay" onclick="if(event.target===this) toggleMeaningPanel(false)" role="dialog" aria-modal="true" aria-labelledby="meaningTitle">
+            <div class="meaning-panel">
+                <div class="meaning-heading">
+                    <h2 id="meaningTitle">Ý NGHĨA CỦA CÁC CON SỐ</h2>
+                    <button class="meaning-close" onclick="toggleMeaningPanel(false)" aria-label="Đóng">✕ ĐÓNG</button>
+                </div>
+                <div class="meaning-grid">
+                    <div class="meaning-item">00: TRỨNG VỊT</div>
+                    <div class="meaning-item">20-60: CON RẾT</div>
+                    <div class="meaning-item">01-41-81: CON CÁ TRẮNG</div>
+                    <div class="meaning-item">21-61: THÚY KIỀU</div>
+                    <div class="meaning-item">02-42-82: CON ỐC</div>
+                    <div class="meaning-item">22-62: BỒ CÂU</div>
+                    <div class="meaning-item">03-43-83: XÁC CHẾT</div>
+                    <div class="meaning-item">23-63: CON KHỈ</div>
+                    <div class="meaning-item">04-44-84: CON CÔNG</div>
+                    <div class="meaning-item">24-64: CON ẾCH</div>
+                    <div class="meaning-item">05-45-85: CON TRÙNG</div>
+                    <div class="meaning-item">25-65: CON Ó</div>
+                    <div class="meaning-item">06-46-86: CON CỌP</div>
+                    <div class="meaning-item">26-66: RỒNG BAY</div>
+                    <div class="meaning-item">07-47-87: CON HEO</div>
+                    <div class="meaning-item">27-67: CON RÙA</div>
+                    <div class="meaning-item">08-48-88: CON THỎ</div>
+                    <div class="meaning-item">28-68: CON GÀ</div>
+                    <div class="meaning-item">09-49-89: CON TRÂU</div>
+                    <div class="meaning-item">29-69: CON LƯƠN</div>
+                    <div class="meaning-item">10-50-90: CON RỒNG NẰM</div>
+                    <div class="meaning-item">30-70: CON CÁ ĐEN</div>
+                    <div class="meaning-item">11-51-91: CON CHÓ</div>
+                    <div class="meaning-item">31-71: CON TÔM</div>
+                    <div class="meaning-item">12-52-92: CON NGỰA</div>
+                    <div class="meaning-item">32-72: CON RẮN</div>
+                    <div class="meaning-item">13-53-93: CON VOI</div>
+                    <div class="meaning-item">33-73: CON NHỆN</div>
+                    <div class="meaning-item">14-54-94: CON MÈO NHÀ</div>
+                    <div class="meaning-item">34-74: CON NAI</div>
+                    <div class="meaning-item">15-55-05: CON CHUỘT</div>
+                    <div class="meaning-item">35-75: CON DÊ</div>
+                    <div class="meaning-item">16-56-96: CON ONG</div>
+                    <div class="meaning-item">36-76: BÀ VẢI</div>
+                    <div class="meaning-item">17-57-97: CON HẠC</div>
+                    <div class="meaning-item">37-77: ÔNG TRỜI</div>
+                    <div class="meaning-item">18-58-98: CON MÈO RỪNG</div>
+                    <div class="meaning-item">38-78: ÔNG ĐỊA</div>
+                    <div class="meaning-item">19-59-99: CON BƯỚM</div>
+                    <div class="meaning-item">39-79: THẦN TÀI</div>
+                    <div class="meaning-item last">40-80: ÔNG TÁO</div>
+                </div>
+            </div>
+        </div>
+
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.3.9
+            &nbsp;|&nbsp; VERSION 8.4.3
         </div>
     </div>
 
@@ -837,6 +926,18 @@
 
         let availableDates = new Set();
         let currentIsoDate = "";
+
+        // ===== BẢNG Ý NGHĨA CÁC CON SỐ =====
+        function toggleMeaningPanel(open) {
+            const overlay = document.getElementById('meaningOverlay');
+            const button = document.getElementById('meaningIconBtn');
+            overlay.classList.toggle('open', open);
+            button.classList.toggle('active', open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') toggleMeaningPanel(false);
+        });
 
         // ===== TOGGLE PROB PANEL =====
         function toggleProbPanel() {
@@ -1835,13 +1936,20 @@
 
             const normalize = value => String(value).replace(/\s+/g, '').toLowerCase();
             const needle = normalize(query);
-            const matches = rows.filter(row => {
-                const cells = Array.from(row.cells);
-                // Ưu tiên tìm chính xác trong cột số/bộ số; nếu không có thì tìm trong toàn dòng.
-                const numberCells = cells.filter((cell, index) => index === 0 || /num-highlight/.test(cell.className));
-                return numberCells.some(cell => normalize(cell.textContent) === needle);
+            // CHỈ tìm trong ô thuộc cột SỐ (được đánh dấu num-highlight), tuyệt đối không dò các cột khác.
+            // Với một số đơn lẻ, so khớp theo từng số để 23 không khớp nhầm với 123.
+            const isSingleNumber = /^\d+$/.test(needle);
+            const found = rows.filter(row => {
+                const numberCells = Array.from(row.querySelectorAll('td.num-highlight'));
+                return numberCells.some(cell => {
+                    const value = normalize(cell.textContent);
+                    if (value === needle) return true;
+                    if (isSingleNumber) {
+                        return (cell.textContent.match(/\d+/g) || []).some(part => part === needle);
+                    }
+                    return false;
+                });
             });
-            const found = matches.length ? matches : rows.filter(row => normalize(row.textContent).includes(needle));
 
             if (!found.length) {
                 probFindMessage.textContent = `Không tìm thấy "${query}" trong kết quả đang hiển thị.`;

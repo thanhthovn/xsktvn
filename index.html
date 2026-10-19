@@ -606,6 +606,34 @@
         #probResult tr.prob-found-row { outline: 2px solid var(--orange-light); background: rgba(255, 140, 0, .20); }
         #probResult tr.prob-found-row td { color: #fff !important; }
 
+        /* ===== Ô NHẬP SỐ TỰ CHỌN ===== */
+        .prob-custom-group {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border: 1px dashed var(--yellow);
+            border-radius: 3px;
+            background: rgba(255, 215, 0, 0.035);
+            width: 100%;
+            justify-content: center;
+        }
+        .prob-custom-group label { color: var(--yellow); }
+        .prob-custom-group input[type="text"] {
+            width: min(560px, 100%);
+            border-color: var(--yellow);
+            color: var(--yellow);
+        }
+        .prob-custom-group input[type="text"]:focus {
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+        }
+        .prob-custom-hint {
+            width: 100%;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--green-dim);
+        }
+
         .footer {
             text-align: center; margin-top: 30px;
             font-size: 0.75rem; color: var(--green-dim);
@@ -748,7 +776,15 @@
                     <option value="100">TOP 100</option>
                     <option value="200">TOP 200</option>
                     <option value="0">Tất cả</option>
+                    <option value="custom">✎ TỰ NHẬP SỐ</option>
                 </select>
+            </div>
+
+            <!-- Ô nhập số tự chọn (hiện khi chọn TỰ NHẬP SỐ) -->
+            <div class="prob-custom-group" id="probCustomGroup">
+                <label for="probCustomNumbers">NHẬP SỐ</label>
+                <input type="text" id="probCustomNumbers" placeholder="VD: 25, 95, 47 hoặc 25 95 47" autocomplete="off" />
+                <div class="prob-custom-hint">Nhập một hoặc nhiều số, cách nhau bởi dấu phẩy, khoảng trắng hoặc dấu gạch. Kết quả chỉ hiển thị đúng những số đã nhập (nếu có trong dữ liệu).</div>
             </div>
 
             <div class="prob-form">
@@ -866,7 +902,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.5.1
+            &nbsp;|&nbsp; VERSION 8.5.3
         </div>
     </div>
 
@@ -917,6 +953,8 @@
         const probExtra = document.getElementById('probExtra');
         const probExtraGroup = document.getElementById('probExtraGroup');
         const probLimit = document.getElementById('probLimit');
+        const probCustomGroup = document.getElementById('probCustomGroup');
+        const probCustomNumbers = document.getElementById('probCustomNumbers');
         const btnAnalyze = document.getElementById('btnAnalyze');
 
         const probFromDate = document.getElementById('probFromDate');
@@ -1386,7 +1424,153 @@
         updateProbabilityTypes();
         updateProbabilityExtra();
 
-        switchRangeMode();
+        // ===== HIỂN THỊ Ô NHẬP SỐ TỰ CHỌN =====
+        function updateCustomNumbersVisibility() {
+            probCustomGroup.style.display = (probLimit.value === 'custom') ? 'flex' : 'none';
+        }
+        probLimit.addEventListener('change', updateCustomNumbersVisibility);
+        updateCustomNumbersVisibility();
+
+        // ===== PHÂN TÍCH SỐ TỰ CHỌN =====
+        function parseCustomNumbers(raw) {
+            if (!raw) return [];
+            return raw
+                .split(/[,;\s\-+]+/)
+                .map(x => x.trim())
+                .filter(x => /^\d+$/.test(x))
+                .map(x => x.padStart(3, '0')); // giữ tối đa 3 chữ số, chuẩn hoá thành 3 ký tự để dễ so
+        }
+
+        function runCustomNumbersAnalysis(allData, regionKey, stationFilter, weekdayFilter, customNumbers, tailLen) {
+            const wanted = new Set(customNumbers);
+            if (!wanted.size) return null;
+
+            const counter = {};
+            const analyzedDraws = new Set();
+            let totalNumbers = 0;
+
+            (allData || []).forEach(day => {
+                getStationByRegion(day, regionKey, stationFilter, weekdayFilter).forEach(st => {
+                    const drawKey = getProbabilityDrawKey(day, regionKey, st.name);
+                    if (analyzedDraws.has(drawKey)) return;
+
+                    const numbers = extractNumericNumbers(st);
+                    const expectedPerDraw = EXPECTED_NUMBERS_PER_DRAW[regionKey] || 0;
+                    if (numbers.length !== expectedPerDraw) return;
+
+                    analyzedDraws.add(drawKey);
+
+                    numbers.forEach(value => {
+                        const tail = value.padStart(tailLen, '0').slice(-tailLen);
+                        if (!wanted.has(tail)) return;
+
+                        if (!counter[tail]) counter[tail] = { count: 0, dates: new Set(), stations: new Map(), stationDates: new Map() };
+                        counter[tail].count++;
+                        counter[tail].dates.add(day.date);
+                        counter[tail].stations.set(st.name, (counter[tail].stations.get(st.name) || 0) + 1);
+                        if (!counter[tail].stationDates.has(st.name)) {
+                            counter[tail].stationDates.set(st.name, new Set());
+                        }
+                        counter[tail].stationDates.get(st.name).add(day.date);
+                        totalNumbers++;
+                    });
+                });
+            });
+
+            return { counter, totalNumbers, analyzedDraws };
+        }
+
+        function renderCustomTailResult(counter, totalNumbers, tailLen, regionLabel, requestedNumbers) {
+            let html = '';
+            const sortedDates = Array.from(
+                Object.values(counter).flatMap(info => Array.from(info.dates))
+            ).sort();
+            const firstText = sortedDates.length ? sortedDates[0].split('-').reverse().join('/') : '-';
+            const lastText = sortedDates.length ? sortedDates[sortedDates.length - 1].split('-').reverse().join('/') : '-';
+
+            html += `<div style="text-align:center; color:var(--cyan); margin:15px 0; font-size:0.85rem;">
+                📅 TỪ ${firstText} ĐẾN ${lastText}
+            </div>`;
+
+            html += `<h3 style="color:var(--yellow); margin-top:20px; margin-bottom:10px; text-align:center;">
+                📊 SỐ TỰ CHỌN — ${regionLabel.toUpperCase()}
+            </h3>`;
+
+            html += `<div style="overflow-x:auto;">
+                <table class="prob-table">
+                    <thead>
+                        <tr>
+                            <th>Số</th>
+                            <th>Số lần</th>
+                            <th>Xác suất</th>
+                            <th>Đài xuất hiện</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            // Hiển thị theo thứ tự người dùng nhập, kèm cảnh báo nếu không có
+            const rows = [];
+            requestedNumbers.forEach(num => {
+                const info = counter[num];
+                if (info) {
+                    const stationText = Array.from(info.stations.entries())
+                        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'vi'))
+                        .map(([name, stationCount]) => {
+                            const dateSet = info.stationDates.get(name);
+                            const dateList = dateSet
+                                ? Array.from(dateSet).sort().map(d => d.split('-').reverse().join('/')).join(', ')
+                                : '';
+                            return dateList ? `${name} (${stationCount}): ${dateList}` : `${name} (${stationCount})`;
+                        })
+                        .join(' || ');
+                    rows.push(`<tr>
+                        <td class="num-highlight">${num}</td>
+                        <td>${info.count}</td>
+                        <td class="percent">${(info.count / totalNumbers * 100).toFixed(2)}%</td>
+                        <td style="text-align:left; min-width:320px; white-space:normal; color:var(--yellow); font-size:0.78rem; line-height:1.9;">
+                            ${stationText}
+                        </td>
+                    </tr>`);
+                } else {
+                    rows.push(`<tr>
+                        <td class="num-highlight" style="opacity:0.45;">${num}</td>
+                        <td>0</td>
+                        <td class="percent">0.00%</td>
+                        <td style="text-align:left; color:#888; font-style:italic;">Không xuất hiện trong dữ liệu đã chọn</td>
+                    </tr>`);
+                }
+            });
+
+            html += rows.join('') + `</tbody></table></div>`;
+
+            // Nút tải CSV cho các số tự chọn
+            const csvData = requestedNumbers.map(num => {
+                const info = counter[num];
+                if (!info) return { num, count: 0, stations: '-' };
+                return {
+                    num,
+                    count: info.count,
+                    stations: Array.from(info.stations.entries())
+                        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'vi'))
+                        .map(([name, stationCount]) => {
+                            const dateSet = info.stationDates.get(name);
+                            const dateList = dateSet
+                                ? Array.from(dateSet).sort().map(d => d.split('-').reverse().join('/')).join('; ')
+                                : '';
+                            return dateList ? `${name} (${stationCount}): ${dateList}` : `${name} (${stationCount})`;
+                        })
+                        .join(' || ')
+                };
+            });
+
+            html += `<div style="text-align:center; margin-top:20px;">
+                <button class="btn btn-orange" onclick='downloadProbabilityCSV(${JSON.stringify(csvData)}, "xacsuat_tuchon_${tailLen}so")'>
+                    📥 TẢI CSV
+                </button>
+            </div>`;
+
+            return html;
+        }
 
         function getDatesToLoad() {
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
@@ -1936,8 +2120,6 @@
 
             const normalize = value => String(value).replace(/\s+/g, '').toLowerCase();
             const needle = normalize(query);
-            // CHỈ tìm trong ô thuộc cột SỐ (được đánh dấu num-highlight), tuyệt đối không dò các cột khác.
-            // Với một số đơn lẻ, so khớp theo từng số để 23 không khớp nhầm với 123.
             const isSingleNumber = /^\d+$/.test(needle);
             const found = rows.filter(row => {
                 const numberCells = Array.from(row.querySelectorAll('td.num-highlight'));
@@ -1979,6 +2161,7 @@
             const stationFilter = region === 'bac' ? probStation.value : (weekdayFilter === 'all' ? 'all' : probStation.value);
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
             const limit = parseInt(probLimit.value, 10);
+            const isCustomMode = probLimit.value === 'custom';
 
             if (availableDates.size === 0) {
                 showProbStatus('error', 'CHƯA CÓ DỮ LIỆU');
@@ -1994,6 +2177,20 @@
                     showProbStatus('error', 'NGÀY BẮT ĐẦU PHẢI <= NGÀY KẾT THÚC');
                     return;
                 }
+            }
+
+            // Kiểm tra số tự chọn nếu đang ở chế độ TỰ NHẬP SỐ
+            const customNums = isCustomMode ? parseCustomNumbers(probCustomNumbers.value) : [];
+            if (isCustomMode && customNums.length === 0) {
+                showProbStatus('error', 'VUI LÒNG NHẬP ÍT NHẤT MỘT SỐ HỢP LỆ');
+                return;
+            }
+            if (isCustomMode && customNums.length > 0) {
+                // Kiểm tra độ dài số phù hợp với loại phân tích
+                const maxDigits = type === '3so' ? 3 : 2;
+                const invalid = customNums.filter(n => n.replace(/^0+/, '').length > maxDigits || (maxDigits === 2 && n.length > 2));
+                // cho phép số ngắn hơn, nhưng không vượt quá số chữ số của loại
+                // (ví dụ 2so: số 5 → pad thành 05, vẫn hợp lệ)
             }
 
             if (region === 'bac' && (type === 'cap' || type === 'bo3') && !probExtra.value.trim()) {
@@ -2076,6 +2273,64 @@
                     };
                 };
 
+                // ===== XỬ LÝ TỰ NHẬP SỐ =====
+                if (isCustomMode) {
+                    // Chỉ hỗ trợ loại 2so, 3so, 2so_dbg8_mtmn
+                    if (type === 'cap' || type === 'bo3') {
+                        showProbStatus('error', 'CHẾ ĐỘ TỰ NHẬP SỐ KHÔNG HỖ TRỢ CẶP/BỘ 3 SỐ');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    const tailLen = type === '3so' ? 3 : 2;
+                    // Chuẩn hoá danh sách số: độ dài bằng tailLen
+                    const normalized = [...new Set(customNums.map(n => n.padStart(tailLen, '0').slice(-tailLen)))];
+
+                    if (type === '2so_dbg8_mtmn') {
+                        if (region === 'bac') {
+                            showProbStatus('error', 'ĐẦU ĐUÔI (ĐB + G8) CHỈ HỖ TRỢ MIỀN NAM & TRUNG');
+                            btnAnalyze.disabled = false;
+                            return;
+                        }
+                        // Dùng analyzeTailsDBG8MTMN rồi lọc
+                        const data = analyzeTailsDBG8MTMN(allData, region, stationFilter, weekdayFilter);
+                        if (!data.totalNumbers) {
+                            showProbStatus('error', `KHÔNG CÓ DỮ LIỆU ĐB + G8 CỦA ${regionNames[region].toUpperCase()}`);
+                            btnAnalyze.disabled = false;
+                            return;
+                        }
+                        // Lọc counter theo số người dùng nhập
+                        const filteredCounter = {};
+                        normalized.forEach(n => { if (data.counter[n]) filteredCounter[n] = data.counter[n]; });
+                        const customTotal = Object.values(filteredCounter).reduce((s, info) => s + info.count, 0);
+                        probResult.innerHTML = renderCustomTailResult(
+                            filteredCounter, customTotal, 2,
+                            `ĐB + G8 — ${regionNames[region]}`, normalized
+                        );
+                        showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ ĐB + G8 — ${normalized.length} SỐ TỰ CHỌN`);
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+
+                    // 2so hoặc 3so thông thường
+                    const customResult = runCustomNumbersAnalysis(
+                        allData, region, stationFilter, weekdayFilter, normalized, tailLen
+                    );
+                    if (!customResult) {
+                        showProbStatus('error', 'KHÔNG CÓ SỐ NÀO TRONG CÁC KỲ XỔ HỢP LỆ');
+                        btnAnalyze.disabled = false;
+                        return;
+                    }
+                    probResult.innerHTML = renderCustomTailResult(
+                        customResult.counter, customResult.totalNumbers, tailLen,
+                        regionLabel, normalized
+                    );
+                    showProbStatus('success', `HOÀN TẤT :: ${customResult.analyzedDraws.size} KỲ, ${normalized.length} SỐ TỰ CHỌN`);
+                    btnAnalyze.disabled = false;
+                    return;
+                }
+
+                // ===== XỬ LÝ BÌNH THƯỜNG =====
                 if (type === '2so_dbg8_mtmn') {
                     const data = runDBG8();
                     if (!data) {

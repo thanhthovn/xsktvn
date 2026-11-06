@@ -583,27 +583,58 @@
         .prob-table .percent { color: var(--cyan); font-weight: 700; }
 
         .prob-find-form {
-            display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
-            gap: 10px; margin: 12px 0 18px; padding: 12px;
-            background: rgba(0, 255, 255, 0.035); border: 1px dashed var(--cyan); border-radius: 4px;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-wrap: wrap;
+            gap: 12px; 
+            margin: 12px 0 18px; 
+            padding: 12px;
+            background: rgba(0, 255, 255, 0.035); 
+            border: 1px dashed var(--cyan); 
+            border-radius: 4px;
         }
-        .prob-find-form label { color: var(--cyan); font-weight: 700; }
+        
+        .prob-find-form label { 
+            width: 100%; 
+            text-align: center; 
+            color: var(--cyan); 
+            font-weight: 700; 
+            margin-bottom: 2px;
+        }
+
         .prob-find-form input {
-            width: 150px; padding: 9px 12px; font: inherit; font-weight: 700;
-            color: var(--yellow); background: #151c17; border: 1px solid var(--cyan);
-            border-radius: 3px; outline: none;
+            width: 180px; 
+            padding: 9px 12px; 
+            font: inherit; 
+            font-weight: 700;
+            color: var(--yellow); 
+            background: #151c17; 
+            border: 1px solid var(--cyan);
+            border-radius: 3px; 
+            outline: none;
         }
-        .prob-find-form input:focus { box-shadow: 0 0 12px rgba(0,255,255,.45); }
-        .prob-find-message { width: 100%; text-align: center; color: var(--green-dim); font-size: .8rem; }
+        .prob-find-form input:focus { 
+            box-shadow: 0 0 12px rgba(0,255,255,.45); 
+        }
+
+        .prob-find-message { 
+            width: 100%; 
+            text-align: center; 
+            color: var(--green-dim); 
+            font-size: .8rem; 
+            margin-top: 4px;
+        }
+        
         #probResult tr.prob-found-row { outline: 2px solid var(--orange-light); background: rgba(255, 140, 0, .20); }
         #probResult tr.prob-found-row td { color: #fff !important; }
 
-                   .prob-custom-group {
+        .prob-custom-group {
             display: none;
-            flex-direction: column; /* Xếp dọc 3 hàng */
-            align-items: center;    /* Căn giữa theo chiều ngang */
-            gap: 12px;              /* Khoảng cách giữa các hàng */
-            padding: 20px 20px;     /* Tăng padding cho thoáng */
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 20px;
             border: 1px dashed var(--yellow);
             border-radius: 3px;
             background: rgba(255, 215, 0, 0.035);
@@ -618,12 +649,12 @@
         }
         
         .prob-custom-group input[type="text"] {
-            width: min(180px, 100%); /* Ngang 1/3 */
-            padding: 16px 12px;      /* Cao gấp đôi */
+            width: min(180px, 100%);
+            padding: 16px 12px;
             border-color: var(--yellow);
             color: var(--yellow);
             font-size: 1rem;
-            text-align: center;      /* Chữ gõ vào ô cũng căn giữa */
+            text-align: center;
         }
         
         .prob-custom-group input[type="text"]:focus {
@@ -632,7 +663,7 @@
         
         .prob-custom-hint {
             width: 100%;
-            text-align: center; /* Chữ hướng dẫn căn giữa */
+            text-align: center;
             font-size: 0.75rem;
             color: var(--green-dim);
             line-height: 1.5;
@@ -786,7 +817,7 @@
             <div class="prob-custom-group" id="probCustomGroup">
                 <label for="probCustomNumbers">NHẬP SỐ MUỐN HIỂN THỊ XÁC SUẤT</label>
                 <input type="text" id="probCustomNumbers" placeholder="VD: 25, 95, 47 hoặc 25 95 47" autocomplete="off" />
-                <div class="prob-custom-hint">Kiểu phân cách: dấu phẩy (,) khoảng trắng [ ], dấu gạch (-).</div>
+                <div class="prob-custom-hint">Kiểu phân cách: dấu phẩy (,), khoảng trắng [ ], dấu gạch (-).</div>
             </div>
 
             <div class="prob-form">
@@ -904,7 +935,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.5.4
+            &nbsp;|&nbsp; VERSION 8.5.8
         </div>
     </div>
 
@@ -1140,7 +1171,9 @@
             updateWeekdayDisplay(nextIso);
             loadResult(nextIso);
         }
+        
         dateInput.addEventListener('change', () => {
+            if (!dateInput.value) return;
             updateWeekdayDisplay(dateInput.value);
             loadResult(dateInput.value);
         });
@@ -1229,7 +1262,7 @@
             let html = '';
             data.regions.forEach(r => {
                 html += `<div class="region region-${r.key}"><div class="region-header">${r.name}</div><div class="station-grid">`;
-                r.stations.forEach((st) => {
+                (r.stations || []).forEach((st) => {
                     const isMain = (r.key === 'nam' && st.name.trim() === mainStationName);
                     const cardClass = isMain ? 'station-card main-station' : 'station-card';
                     html += `<div class="${cardClass}"><div class="station-header"><span class="station-name">${st.name}</span><span class="station-code">${st.code || ''}</span></div><table class="prize-table">`;
@@ -1344,17 +1377,7 @@
             return labels[value] || '';
         }
 
-        function getStationsByRegionWeekday(region, weekday) {
-            if (weekday === 'all') return STATIONS_BY_REGION[region] || [];
-            const day = Number(weekday);
-            if (region === 'nam') return STATIONS_BY_WEEKDAY_MN[day] || [];
-            if (region === 'trung') return STATIONS_BY_WEEKDAY_MT[day] || [];
-            if (region === 'bac') {
-                const station = STATIONS_BY_WEEKDAY_MB[day];
-                return station ? [station] : [];
-            }
-            return [];
-        }
+        // ĐÃ XÓA HÀM TRÙNG getStationsByRegionWeekday Ở ĐÂY
 
         function resetProbabilitySubFilters() {
             probType.value = '2so';
@@ -1726,6 +1749,8 @@
             if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d) || m < 1 || m > 12 || d < 1 || d > 31) return null;
             const date = new Date(Date.UTC(y, m - 1, d));
             if (Number.isNaN(date.getTime())) return null;
+            // Chặn ngày roll-over: 2024-02-31 -> 2024-03-02
+            if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null;
             const offset = Number(offsetDays);
             if (!Number.isInteger(offset)) return null;
             if (offset) date.setUTCDate(date.getUTCDate() + offset);

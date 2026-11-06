@@ -583,7 +583,7 @@
         .prob-table .percent { color: var(--cyan); font-weight: 700; }
 
         .prob-find-form {
-            display: flex; 
+            display: none; /* Ẩn mặc định, chỉ hiện khi phân tích xong */
             justify-content: center; 
             align-items: center; 
             flex-wrap: wrap;
@@ -935,7 +935,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.5.8
+            &nbsp;|&nbsp; VERSION 8.5.4
         </div>
     </div>
 
@@ -1266,7 +1266,7 @@
                     const isMain = (r.key === 'nam' && st.name.trim() === mainStationName);
                     const cardClass = isMain ? 'station-card main-station' : 'station-card';
                     html += `<div class="${cardClass}"><div class="station-header"><span class="station-name">${st.name}</span><span class="station-code">${st.code || ''}</span></div><table class="prize-table">`;
-                    st.prizes.forEach(p => {
+                    (st.prizes || []).forEach(p => {
                         const cls = p.label === 'Giải ĐB' ? 'prize-numbers special-prize' : 'prize-numbers';
                         html += `<tr><td class="prize-label">${p.label}</td><td class="${cls}">${p.numbers.join(' &nbsp; ')}</td></tr>`;
                     });
@@ -1377,7 +1377,35 @@
             return labels[value] || '';
         }
 
-        // ĐÃ XÓA HÀM TRÙNG getStationsByRegionWeekday Ở ĐÂY
+        const STATIONS_BY_WEEKDAY_MT = {
+            0: ["Kon Tum", "Huế", "Khánh Hòa"],
+            1: ["Phú Yên", "Huế"],
+            2: ["Đắk Lắk", "Quảng Nam"],
+            3: ["Đà Nẵng", "Khánh Hòa"],
+            4: ["Bình Định", "Quảng Trị", "Quảng Bình"],
+            5: ["Gia Lai", "Ninh Thuận"],
+            6: ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"],
+        };
+
+        const STATIONS_BY_WEEKDAY_MB = {
+            0: "Thái Bình",
+            1: "Hà Nội",
+            2: "Quảng Ninh",
+            3: "Bắc Ninh",
+            4: "Hà Nội",
+            5: "Hải Phòng",
+            6: "Nam Định",
+        };
+
+        const STATIONS_BY_WEEKDAY_MN = {
+            0: ["Tiền Giang", "Kiên Giang", "Đà Lạt"],
+            1: ["TP. HCM", "Đồng Tháp", "Cà Mau"],
+            2: ["Bến Tre", "Vũng Tàu", "Bạc Liêu"],
+            3: ["Đồng Nai", "Cần Thơ", "Sóc Trăng"],
+            4: ["Tây Ninh", "An Giang", "Bình Thuận"],
+            5: ["Vĩnh Long", "Bình Dương", "Trà Vinh"],
+            6: ["TP. HCM", "Long An", "Bình Phước", "Hậu Giang"],
+        };
 
         function resetProbabilitySubFilters() {
             probType.value = '2so';
@@ -1390,6 +1418,7 @@
             const region = probRegion.value;
             const weekday = probWeekday.value;
 
+            // Xử lý riêng cho Miền Bắc (chỉ có 1 đài mỗi ngày)
             if (region === 'bac') {
                 if (probWeekdayGroup) probWeekdayGroup.style.display = 'none';
                 if (probStationGroup) probStationGroup.style.display = '';
@@ -1404,8 +1433,10 @@
                 return;
             }
 
+            // Hiển thị lại ô chọn Thứ nếu là Miền Nam / Trung
             if (probWeekdayGroup) probWeekdayGroup.style.display = '';
 
+            // Nếu chọn "Cả tuần"
             if (weekday === 'all') {
                 probStation.value = 'all';
                 probStation.innerHTML = '<option value="all">Tất cả đài của cả tuần</option>';
@@ -1413,9 +1444,11 @@
                 return;
             }
 
+            // Nếu chọn 1 thứ cụ thể
             if (probStationGroup) probStationGroup.style.display = '';
-            const stations = getStationsByRegionWeekday(region, weekday);
+            const stations = getScheduledStationsForWeekday(region, Number(weekday));
             const label = getWeekdayLabel(weekday);
+            
             probStation.innerHTML = '';
 
             const allOption = document.createElement('option');
@@ -1429,6 +1462,7 @@
                 option.textContent = name;
                 probStation.appendChild(option);
             });
+            
             probStation.value = 'all';
         }
 
@@ -1529,7 +1563,7 @@
                     </tr></thead><tbody>`;
 
             entries.forEach(([num, info]) => {
-                if (info) {
+                if (info && info.count > 0) {
                     const pct = totalNumbers > 0 ? (info.count / totalNumbers * 100).toFixed(2) : '0.00';
                     html += `<tr>
                         <td class="num-highlight">${num}</td>
@@ -1555,7 +1589,7 @@
 
         function renderTailCsvButton(entries, totalNumbers, filename) {
             const csvData = entries
-                .filter(([, info]) => info)
+                .filter(([, info]) => info && info.count > 0)
                 .map(([num, info]) => ({
                     num,
                     count: info.count,
@@ -1698,36 +1732,6 @@
             }
             return allData;
         }
-
-        const STATIONS_BY_WEEKDAY_MT = {
-            0: ["Kon Tum", "Huế", "Khánh Hòa"],
-            1: ["Phú Yên", "Huế"],
-            2: ["Đắk Lắk", "Quảng Nam"],
-            3: ["Đà Nẵng", "Khánh Hòa"],
-            4: ["Bình Định", "Quảng Trị", "Quảng Bình"],
-            5: ["Gia Lai", "Ninh Thuận"],
-            6: ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"],
-        };
-
-        const STATIONS_BY_WEEKDAY_MB = {
-            0: "Thái Bình",
-            1: "Hà Nội",
-            2: "Quảng Ninh",
-            3: "Bắc Ninh",
-            4: "Hà Nội",
-            5: "Hải Phòng",
-            6: "Nam Định",
-        };
-
-        const STATIONS_BY_WEEKDAY_MN = {
-            0: ["Tiền Giang", "Kiên Giang", "Đà Lạt"],
-            1: ["TP. HCM", "Đồng Tháp", "Cà Mau"],
-            2: ["Bến Tre", "Vũng Tàu", "Bạc Liêu"],
-            3: ["Đồng Nai", "Cần Thơ", "Sóc Trăng"],
-            4: ["Tây Ninh", "An Giang", "Bình Thuận"],
-            5: ["Vĩnh Long", "Bình Dương", "Trà Vinh"],
-            6: ["TP. HCM", "Long An", "Bình Phước", "Hậu Giang"],
-        };
 
         function normalizeStationName(name) {
             return String(name || '')
@@ -2094,7 +2098,6 @@
                 }
             }
 
-            // Kiểm tra số tự chọn
             const customNums = isCustomMode ? parseCustomNumbers(probCustomNumbers.value) : [];
             if (isCustomMode && customNums.length === 0) {
                 showProbStatus('error', 'VUI LÒNG NHẬP ÍT NHẤT MỘT SỐ HỢP LỆ');
@@ -2115,6 +2118,10 @@
             }
 
             btnAnalyze.disabled = true;
+            
+            // ẨN FORM TÌM KIẾM KHI BẮT ĐẦU CHẠY
+            document.getElementById('probFindForm').style.display = 'none';
+            
             probResult.innerHTML = '';
 
             try {
@@ -2213,6 +2220,7 @@
                             `ĐB + G8 — ${regionNames[region]}`, normalized
                         );
                         showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ ĐB + G8 — ${normalized.length} SỐ TỰ CHỌN`);
+                        document.getElementById('probFindForm').style.display = 'flex';
                         btnAnalyze.disabled = false;
                         return;
                     }
@@ -2230,6 +2238,7 @@
                         regionLabel, normalized
                     );
                     showProbStatus('success', `HOÀN TẤT :: ${customResult.analyzedDraws.size} KỲ, ${normalized.length} SỐ TỰ CHỌN`);
+                    document.getElementById('probFindForm').style.display = 'flex';
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2247,6 +2256,7 @@
                         `ĐB + G8 — ${regionNames[region]}`, limit
                     );
                     showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ XỔ, ${data.totalNumbers.toLocaleString()} MẪU — ĐB + G8 ${regionNames[region].toUpperCase()}${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
+                    document.getElementById('probFindForm').style.display = 'flex';
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2272,6 +2282,7 @@
                     }
                     probResult.innerHTML = data.html;
                     showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ MB${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
+                    document.getElementById('probFindForm').style.display = 'flex';
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2285,6 +2296,7 @@
                 }
                 probResult.innerHTML = data.html;
                 showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ, ${data.totalNumbers.toLocaleString()} MẪU${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
+                document.getElementById('probFindForm').style.display = 'flex';
                 btnAnalyze.disabled = false;
             } catch (err) {
                 console.error(err);

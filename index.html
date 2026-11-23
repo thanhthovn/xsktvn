@@ -935,7 +935,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.6.2
+            &nbsp;|&nbsp; VERSION 8.6.3
         </div>
     </div>
 
@@ -1147,6 +1147,7 @@
         dateInput.value = todayIso;
         currentIsoDate = todayIso;
         updateWeekdayDisplay(todayIso);
+        updateYearModeDates();
 
 
         function showStatus(type, msg) {
@@ -1303,9 +1304,10 @@
                 if (err.name === 'AbortError') return;
                 if (currentIsoDate !== isoDate) return;
                 if (err.message === 'NO_DATA_FOR_THIS_DATE') {
-                    const todayVN = getRealTodayVN();
-                    const minhNgocUrl = `https://www.minhngoc.net/ket-qua-xo-so/${todayVN}.html`;
-                    const displayDate = fmtDate(todayVN);
+                    const targetIso = isoDate || getRealTodayVN();
+                    const minhNgocDate = targetIso.split('-').reverse().join('-');
+                    const minhNgocUrl = `https://www.minhngoc.net/ket-qua-xo-so/${minhNgocDate}.html`;
+                    const displayDate = fmtDate(targetIso);
 
                     statusBox.style.display = 'none';
                     resultBox.innerHTML = `
@@ -1528,6 +1530,7 @@
 
                     numbers.forEach(value => {
                         const tail = value.padStart(tailLen, '0').slice(-tailLen);
+                        totalNumbers++;
                         if (!wanted.has(tail)) return;
 
                         if (!counter[tail]) counter[tail] = { count: 0, dates: new Set(), stations: new Map(), stationDates: new Map() };
@@ -1538,7 +1541,6 @@
                             counter[tail].stationDates.set(st.name, new Set());
                         }
                         counter[tail].stationDates.get(st.name).add(day.date);
-                        totalNumbers++;
                     });
                 });
             });
@@ -1587,6 +1589,13 @@
             return html;
         }
 
+        let lastCsvExport = null;
+
+        function downloadLastCSV() {
+            if (!lastCsvExport) return;
+            downloadProbabilityCSV(lastCsvExport.data, lastCsvExport.filename);
+        }
+
         function renderTailCsvButton(entries, totalNumbers, filename) {
             const csvData = entries
                 .filter(([, info]) => info && info.count > 0)
@@ -1597,8 +1606,10 @@
                     stations: formatStationText(info, '; ')
                 }));
 
+            lastCsvExport = { data: csvData, filename };
+
             return `<div style="text-align:center; margin-top:20px;">
-                <button class="btn btn-orange" onclick='downloadProbabilityCSV(${JSON.stringify(csvData)}, "${filename}")'>
+                <button class="btn btn-orange" onclick="downloadLastCSV()">
                     📥 TẢI CSV
                 </button>
             </div>`;
@@ -1654,11 +1665,12 @@
                 for (let i = 0; i < days; i++) {
                     const d = new Date(fromDate);
                     d.setUTCDate(fromDate.getUTCDate() + i);
-                    result.push([
+                    const iso = [
                         d.getUTCFullYear(),
                         String(d.getUTCMonth() + 1).padStart(2, '0'),
                         String(d.getUTCDate()).padStart(2, '0')
-                    ].join('-'));
+                    ].join('-');
+                    if (availableDates.has(iso)) result.push(iso);
                 }
 
                 return result.reverse();
@@ -1693,6 +1705,8 @@
             return results;
         }
 
+        const dayDataCache = new Map();
+
         async function loadDaysData() {
             const datesToLoad = getDatesToLoad();
             if (datesToLoad.length === 0) return [];
@@ -1711,13 +1725,21 @@
             const results = await fetchWithConcurrency(
                 datesToLoad,
                 async (iso) => {
+                    const isToday = iso === realTodayVN;
+                    if (!isToday && dayDataCache.has(iso)) {
+                        tick();
+                        return dayDataCache.get(iso);
+                    }
                     const year = iso.slice(0, 4);
                     try {
-                        const res = await fetch(`data/${year}/${iso}.json?_=${Date.now()}`);
+                        const url = isToday ? `data/${year}/${iso}.json?_=${Date.now()}` : `data/${year}/${iso}.json`;
+                        const res = await fetch(url);
                         if (!res.ok) { tick(); return null; }
                         const dayData = await res.json();
+                        const parsed = { date: iso, regions: dayData.regions || [] };
+                        if (!isToday) dayDataCache.set(iso, parsed);
                         tick();
-                        return { date: iso, regions: dayData.regions || [] };
+                        return parsed;
                     } catch (e) {
                         console.warn('Skip', iso, e.message);
                         tick();
@@ -2214,9 +2236,8 @@
                         }
                         const filteredCounter = {};
                         normalized.forEach(n => { if (data.counter[n]) filteredCounter[n] = data.counter[n]; });
-                        const customTotal = Object.values(filteredCounter).reduce((s, info) => s + info.count, 0);
                         probResult.innerHTML = renderCustomTailResult(
-                            filteredCounter, customTotal, 2,
+                            filteredCounter, data.totalNumbers, 2,
                             `ĐB + G8 — ${regionNames[region]}`, normalized
                         );
                         showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ ĐB + G8 — ${normalized.length} SỐ TỰ CHỌN`);
@@ -2312,3 +2333,4 @@
     </script>
 </body>
 </html>
+

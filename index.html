@@ -152,19 +152,40 @@
         }
         .meaning-overlay.open { display: flex; }
         .meaning-panel {
-            width: min(900px, 100%); max-height: 90vh; overflow: auto;
+            width: min(680px, 100%); max-height: 90vh; overflow: auto;
             background: #202a23; color: var(--green); border: 2px solid var(--green);
-            box-shadow: 0 0 25px rgba(53,208,111,.22); border-radius: 5px; padding: 20px;
+            box-shadow: 0 0 25px rgba(53,208,111,.22); border-radius: 5px; padding: 22px 26px;
         }
-        .meaning-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
-        .meaning-heading h2 { color:#ff3b3b; font-size:clamp(1.15rem, 3vw, 1.8rem); text-align:center; }
-        .meaning-close { border:1px solid var(--green-dim); color:var(--green); background:#151c17; padding:7px 12px; cursor:pointer; font:inherit; }
-        .meaning-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px 22px; }
-        .meaning-item { padding:5px 3px; font-weight:800; font-size:clamp(.78rem, 1.8vw, 1.05rem); line-height:1.35; }
+        .meaning-heading {
+            display: flex; justify-content: center; align-items: center;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px dashed var(--green-dark);
+        }
+        .meaning-heading h2 { color:#ff3b3b; font-size:clamp(1.15rem, 2.8vw, 1.55rem); text-align:center; letter-spacing: 1px; }
+        .meaning-footer {
+            margin-top: 18px; padding-top: 14px;
+            border-top: 1px dashed var(--green-dark);
+            text-align: center;
+        }
+        .meaning-close {
+            border: 1px solid var(--green-dim); color: var(--green); background: #151c17;
+            padding: 9px 28px; border-radius: 3px; cursor: pointer;
+            font: inherit; font-weight: 700; letter-spacing: 1px; transition: all 0.2s;
+        }
+        .meaning-close:hover {
+            background: var(--green); color: #000; border-color: var(--green);
+            box-shadow: 0 0 14px rgba(53,208,111,0.5);
+        }
+        .meaning-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px 14px; }
+        .meaning-item {
+            padding: 7px 12px; font-weight: 800; font-size: clamp(.78rem, 1.6vw, .96rem);
+            line-height: 1.35; background: rgba(53, 208, 111, 0.035);
+            border: 1px solid rgba(53, 208, 111, 0.14); border-radius: 4px;
+        }
         .meaning-item:nth-child(4n+1) { color:#ff4545; }
-        .meaning-item:nth-child(4n+2) { color:#287bd0; }
-        .meaning-item:nth-child(4n+3) { color:#28b84a; }
-        .meaning-item:nth-child(4n) { color:#ff8c32; }
+        .meaning-item:nth-child(4n+2) { color:#3898ff; }
+        .meaning-item:nth-child(4n+3) { color:#35d06f; }
+        .meaning-item:nth-child(4n) { color:#ff963c; }
         .meaning-item.last { grid-column:1 / -1; text-align:center; }
 
         @media (max-width: 650px) {
@@ -299,6 +320,24 @@
             background: #151c17; color: var(--orange);
             box-shadow: 0 0 20px var(--orange);
         }
+        .btn-predict {
+            background: #ffd700; border: 2px solid #ff2a2a;
+            color: #b91c1c; font-weight: 800;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.45);
+        }
+        .btn-predict:hover {
+            background: #ffea55; color: #991b1b; border-color: #ff2a2a;
+            box-shadow: 0 0 20px rgba(255, 42, 42, 0.6);
+        }
+        .btn-find-dark {
+            background: #0b4a2b; border: 1.5px solid var(--cyan);
+            color: #e0ffff; font-weight: 700;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.25);
+        }
+        .btn-find-dark:hover {
+            background: #116b3e; color: #ffffff; border-color: var(--cyan);
+            box-shadow: 0 0 16px rgba(0, 255, 255, 0.55);
+        }
 
         .stats {
             display: flex; justify-content: center; gap: 15px;
@@ -336,9 +375,14 @@
             color: var(--red); border: 1px solid var(--red); text-shadow: 0 0 6px var(--red);
         }
         .status.success {
-            display: block; background: rgba(53, 208, 111, 0.045);
-            color: var(--green); border: 1px solid var(--green); text-shadow: 0 0 6px var(--green);
+            display: table; width: fit-content; max-width: 100%;
+            margin: 0 auto 16px; padding: 9px 20px;
+            background: #ffd700; color: #cc0000;
+            border: 2px solid #ff8c00; border-radius: 4px;
+            font-weight: 800; text-shadow: none;
+            box-shadow: 0 0 12px rgba(255, 140, 0, 0.35);
         }
+        .status.success::before { color: #cc0000; font-weight: 800; }
 
         .minhngoc-btn-wrap {
             display: flex; justify-content: center; align-items: center;
@@ -892,12 +936,9 @@
 
                 <label>HIỂN THỊ</label>
                 <select id="probLimit">
+                    <option value="0" selected>TẤT CẢ XÁC SUẤT</option>
                     <option value="10">TOP 10</option>
-                    <option value="20">TOP 20</option>
-                    <option value="50" selected>TOP 50</option>
-                    <option value="100">TOP 100</option>
-                    <option value="200">TOP 200</option>
-                    <option value="0">Tất cả</option>
+                    <option value="50">TOP 50</option>
                     <option value="custom">✎ TỰ NHẬP SỐ</option>
                 </select>
             </div>
@@ -958,8 +999,10 @@
             </div>
 
             <div class="status" id="probStatus"></div>
-            <div id="probFindToggleWrap" style="display:none; text-align:center; margin:12px 0;">
-                <button type="button" class="btn" id="btnToggleProbFind" style="border-color:var(--cyan); color:var(--cyan);" onclick="toggleProbFindForm()">🔎 TÌM SỐ KẾT QUẢ</button>
+            <div id="probActionBar" style="display:none; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px; margin:12px 0 16px;">
+                <button type="button" class="btn btn-predict" id="btnPredict10" onclick="showNextDrawPrediction()" style="display:none;">🔮 DỰ ĐOÁN 10 SỐ KỲ TỚI</button>
+                <button type="button" class="btn btn-orange" id="btnDownloadCsv" onclick="downloadLastCSV()" style="display:none;">📥 TẢI CSV</button>
+                <button type="button" class="btn btn-find-dark" id="btnToggleProbFind" onclick="toggleProbFindForm()">🔎 TÌM SỐ KẾT QUẢ</button>
             </div>
             <div class="prob-find-form" id="probFindForm">
                 <label for="probFindNumber">🔎 TÌM SỐ TRONG KẾT QUẢ</label>
@@ -968,6 +1011,7 @@
                 <button type="button" class="btn" id="btnClearProbabilityFind">XÓA</button>
                 <div class="prob-find-message" id="probFindMessage">Chạy phân tích trước, sau đó nhập số để tìm và cuộn tới dòng kết quả tương ứng.</div>
             </div>
+            <div id="probPredictBox"></div>
             <div id="probResult"></div>
         </div>
 
@@ -975,7 +1019,6 @@
             <div class="meaning-panel">
                 <div class="meaning-heading">
                     <h2 id="meaningTitle">Ý NGHĨA CỦA CÁC CON SỐ</h2>
-                    <button class="meaning-close" onclick="toggleMeaningPanel(false)" aria-label="Đóng">✕ ĐÓNG</button>
                 </div>
                 <div class="meaning-grid">
                     <div class="meaning-item">00: TRỨNG VỊT</div>
@@ -1018,14 +1061,17 @@
                     <div class="meaning-item">38-78: ÔNG ĐỊA</div>
                     <div class="meaning-item">19-59-99: CON BƯỚM</div>
                     <div class="meaning-item">39-79: THẦN TÀI</div>
-                    <div class="meaning-item">40-80: ÔNG TÁO</div>
+                    <div class="meaning-item last">40-80: ÔNG TÁO</div>
+                </div>
+                <div class="meaning-footer">
+                    <button class="meaning-close" onclick="toggleMeaningPanel(false)" aria-label="Đóng">✕ ĐÓNG</button>
                 </div>
             </div>
         </div>
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.6.6
+            &nbsp;|&nbsp; VERSION 8.6.8
         </div>
     </div>
 
@@ -1757,18 +1803,7 @@
                 }));
 
             lastCsvExport = { data: csvData, filename };
-
-            const predictBtn = enablePredict
-                ? `<button class="btn" style="border-color:var(--cyan); color:var(--cyan);" onclick="showNextDrawPrediction()">🔮 DỰ ĐOÁN 10 SỐ KỲ TỚI</button>`
-                : '';
-
-            return `<div style="display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin:14px 0 12px;">
-                ${predictBtn}
-                <button class="btn btn-orange" onclick="downloadLastCSV()">
-                    📥 TẢI CSV
-                </button>
-            </div>
-            <div id="probPredictBox"></div>`;
+            return '';
         }
 
         function renderTailResult(counter, totalNumbers, tailLen, regionLabel, limit = 50, slotsPerDraw = 18, drawsCount = 0) {
@@ -2200,13 +2235,20 @@
             setTimeout(() => URL.revokeObjectURL(link.href), 1000);
         }
 
-        function showProbFindTrigger(show) {
-            const wrap = document.getElementById('probFindToggleWrap');
+        function showProbFindTrigger(show, opts = {}) {
+            const bar = document.getElementById('probActionBar');
             const form = document.getElementById('probFindForm');
-            const btn = document.getElementById('btnToggleProbFind');
-            if (wrap) wrap.style.display = show ? 'block' : 'none';
+            const btnFind = document.getElementById('btnToggleProbFind');
+            const btnPred = document.getElementById('btnPredict10');
+            const btnCsv = document.getElementById('btnDownloadCsv');
+            const predBox = document.getElementById('probPredictBox');
+
+            if (bar) bar.style.display = show ? 'flex' : 'none';
             if (form) form.style.display = 'none';
-            if (btn) btn.textContent = '🔎 TÌM SỐ KẾT QUẢ';
+            if (predBox) predBox.innerHTML = '';
+            if (btnFind) btnFind.textContent = '🔎 TÌM SỐ KẾT QUẢ';
+            if (btnPred) btnPred.style.display = (show && opts.predict) ? '' : 'none';
+            if (btnCsv) btnCsv.style.display = (show && opts.csv) ? '' : 'none';
         }
 
         function toggleProbFindForm() {
@@ -2420,7 +2462,7 @@
                             `ĐB + G8 — ${regionNames[region]}`, normalized
                         );
                         showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ ĐB + G8 — ${normalized.length} SỐ TỰ CHỌN`);
-                        showProbFindTrigger(true);
+                        showProbFindTrigger(true, { predict: false, csv: true });
                         btnAnalyze.disabled = false;
                         return;
                     }
@@ -2438,7 +2480,7 @@
                         regionLabel, normalized
                     );
                     showProbStatus('success', `HOÀN TẤT :: ${customResult.analyzedDraws.size} KỲ, ${normalized.length} SỐ TỰ CHỌN`);
-                    showProbFindTrigger(true);
+                    showProbFindTrigger(true, { predict: false, csv: true });
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2456,7 +2498,7 @@
                         `ĐB + G8 — ${regionNames[region]}`, limit, 2, data.analyzedDraws.size
                     );
                     showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ XỔ, ${data.totalNumbers.toLocaleString()} MẪU — ĐB + G8 ${regionNames[region].toUpperCase()}${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
-                    showProbFindTrigger(true);
+                    showProbFindTrigger(true, { predict: true, csv: true });
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2482,7 +2524,7 @@
                     }
                     probResult.innerHTML = data.html;
                     showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ MB${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
-                    showProbFindTrigger(true);
+                    showProbFindTrigger(true, { predict: false, csv: false });
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2496,7 +2538,7 @@
                 }
                 probResult.innerHTML = data.html;
                 showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ, ${data.totalNumbers.toLocaleString()} MẪU${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
-                showProbFindTrigger(true);
+                showProbFindTrigger(true, { predict: true, csv: true });
                 btnAnalyze.disabled = false;
             } catch (err) {
                 console.error(err);

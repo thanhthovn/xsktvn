@@ -948,17 +948,19 @@
                     <label>ĐẾN NGÀY</label>
                     <input type="date" id="probToDate" />
                 </div>
-            </div>
 
-            <div class="prob-form">
-                <div id="probExtraGroup" style="display:none;">
+                <div id="probExtraGroup" style="display:none; align-items:center; gap:10px;">
                     <label>NHẬP SỐ</label>
                     <input type="text" id="probExtra" placeholder="VD: 23-53 hoặc 15-58-69" />
                 </div>
+
                 <button class="btn btn-orange" id="btnAnalyze">🎲 PHÂN TÍCH</button>
             </div>
 
             <div class="status" id="probStatus"></div>
+            <div id="probFindToggleWrap" style="display:none; text-align:center; margin:12px 0;">
+                <button type="button" class="btn" id="btnToggleProbFind" style="border-color:var(--cyan); color:var(--cyan);" onclick="toggleProbFindForm()">🔎 TÌM SỐ KẾT QUẢ</button>
+            </div>
             <div class="prob-find-form" id="probFindForm">
                 <label for="probFindNumber">🔎 TÌM SỐ TRONG KẾT QUẢ</label>
                 <input type="text" id="probFindNumber" inputmode="numeric" maxlength="20" placeholder="Nhập số / bộ số..." autocomplete="off" />
@@ -1023,7 +1025,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.6.4
+            &nbsp;|&nbsp; VERSION 8.6.6
         </div>
     </div>
 
@@ -1760,13 +1762,13 @@
                 ? `<button class="btn" style="border-color:var(--cyan); color:var(--cyan);" onclick="showNextDrawPrediction()">🔮 DỰ ĐOÁN 10 SỐ KỲ TỚI</button>`
                 : '';
 
-            return `<div id="probPredictBox"></div>
-            <div style="display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin-top:20px;">
+            return `<div style="display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin:14px 0 12px;">
                 ${predictBtn}
                 <button class="btn btn-orange" onclick="downloadLastCSV()">
                     📥 TẢI CSV
                 </button>
-            </div>`;
+            </div>
+            <div id="probPredictBox"></div>`;
         }
 
         function renderTailResult(counter, totalNumbers, tailLen, regionLabel, limit = 50, slotsPerDraw = 18, drawsCount = 0) {
@@ -1783,8 +1785,8 @@
             lastPredictionCtx = { counter, totalNumbers, slotsPerDraw, regionLabel, drawsCount };
 
             const title = `${topLabel} SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}`;
-            return renderTailTable(top, totalNumbers, title, firstText, lastText)
-                 + renderTailCsvButton(top, totalNumbers, `xacsuat_${tailLen}so`, true);
+            return renderTailCsvButton(top, totalNumbers, `xacsuat_${tailLen}so`, true)
+                 + renderTailTable(top, totalNumbers, title, firstText, lastText);
         }
 
         function renderCustomTailResult(counter, totalNumbers, tailLen, regionLabel, requestedNumbers) {
@@ -1795,8 +1797,8 @@
             const lastText = dates.length ? fmtDate(dates[dates.length - 1]) : '-';
 
             const title = `SỐ TỰ CHỌN — ${regionLabel.toUpperCase()}`;
-            return renderTailTable(entries, totalNumbers, title, firstText, lastText)
-                 + renderTailCsvButton(entries, totalNumbers, `xacsuat_tuchon_${tailLen}so`);
+            return renderTailCsvButton(entries, totalNumbers, `xacsuat_tuchon_${tailLen}so`, false)
+                 + renderTailTable(entries, totalNumbers, title, firstText, lastText);
         }
 
         function getDatesToLoad() {
@@ -2198,6 +2200,25 @@
             setTimeout(() => URL.revokeObjectURL(link.href), 1000);
         }
 
+        function showProbFindTrigger(show) {
+            const wrap = document.getElementById('probFindToggleWrap');
+            const form = document.getElementById('probFindForm');
+            const btn = document.getElementById('btnToggleProbFind');
+            if (wrap) wrap.style.display = show ? 'block' : 'none';
+            if (form) form.style.display = 'none';
+            if (btn) btn.textContent = '🔎 TÌM SỐ KẾT QUẢ';
+        }
+
+        function toggleProbFindForm() {
+            const form = document.getElementById('probFindForm');
+            const btn = document.getElementById('btnToggleProbFind');
+            if (!form) return;
+            const isOpen = form.style.display === 'flex';
+            form.style.display = isOpen ? 'none' : 'flex';
+            if (btn) btn.textContent = isOpen ? '🔎 TÌM SỐ KẾT QUẢ' : '✕ ẨN TÌM SỐ KẾT QUẢ';
+            if (!isOpen && probFindNumber) probFindNumber.focus();
+        }
+
         const probFindNumber = document.getElementById('probFindNumber');
         const probFindMessage = document.getElementById('probFindMessage');
 
@@ -2297,8 +2318,8 @@
 
             btnAnalyze.disabled = true;
             
-            // ẨN FORM TÌM KIẾM KHI BẮT ĐẦU CHẠY
-            document.getElementById('probFindForm').style.display = 'none';
+            // ẨN NÚT & FORM TÌM KIẾM KHI BẮT ĐẦU CHẠY
+            showProbFindTrigger(false);
             
             probResult.innerHTML = '';
 
@@ -2399,7 +2420,7 @@
                             `ĐB + G8 — ${regionNames[region]}`, normalized
                         );
                         showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ ĐB + G8 — ${normalized.length} SỐ TỰ CHỌN`);
-                        document.getElementById('probFindForm').style.display = 'flex';
+                        showProbFindTrigger(true);
                         btnAnalyze.disabled = false;
                         return;
                     }
@@ -2417,7 +2438,7 @@
                         regionLabel, normalized
                     );
                     showProbStatus('success', `HOÀN TẤT :: ${customResult.analyzedDraws.size} KỲ, ${normalized.length} SỐ TỰ CHỌN`);
-                    document.getElementById('probFindForm').style.display = 'flex';
+                    showProbFindTrigger(true);
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2435,7 +2456,7 @@
                         `ĐB + G8 — ${regionNames[region]}`, limit, 2, data.analyzedDraws.size
                     );
                     showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ XỔ, ${data.totalNumbers.toLocaleString()} MẪU — ĐB + G8 ${regionNames[region].toUpperCase()}${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
-                    document.getElementById('probFindForm').style.display = 'flex';
+                    showProbFindTrigger(true);
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2461,7 +2482,7 @@
                     }
                     probResult.innerHTML = data.html;
                     showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ MB${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
-                    document.getElementById('probFindForm').style.display = 'flex';
+                    showProbFindTrigger(true);
                     btnAnalyze.disabled = false;
                     return;
                 }
@@ -2475,7 +2496,7 @@
                 }
                 probResult.innerHTML = data.html;
                 showProbStatus('success', `HOÀN TẤT :: ${data.drawsCount} KỲ, ${data.totalNumbers.toLocaleString()} MẪU${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
-                document.getElementById('probFindForm').style.display = 'flex';
+                showProbFindTrigger(true);
                 btnAnalyze.disabled = false;
             } catch (err) {
                 console.error(err);

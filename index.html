@@ -670,6 +670,94 @@
             margin: 0;
         }
 
+        .predict-box {
+            margin: 18px 0 22px;
+            padding: 16px;
+            border: 1px solid var(--cyan);
+            border-radius: 4px;
+            background: rgba(0, 255, 255, 0.04);
+            box-shadow: 0 0 18px rgba(0, 255, 255, 0.12);
+        }
+        .predict-title {
+            text-align: center;
+            color: var(--cyan);
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .predict-sub {
+            text-align: center;
+            color: var(--green-dim);
+            font-size: 0.76rem;
+            margin-bottom: 14px;
+        }
+        .predict-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        .predict-card {
+            background: #141c17;
+            border: 1px solid var(--green-dark);
+            border-radius: 4px;
+            padding: 10px 8px;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .predict-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--cyan);
+        }
+        .predict-card.top3 {
+            border-color: var(--yellow);
+            background: rgba(255, 215, 0, 0.06);
+        }
+        .predict-rank {
+            font-size: 0.7rem;
+            color: var(--green-dim);
+            margin-bottom: 2px;
+        }
+        .predict-num {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: var(--yellow);
+            letter-spacing: 2px;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.45);
+        }
+        .predict-pct {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--cyan);
+            margin-top: 3px;
+        }
+        .predict-bar-wrap {
+            height: 5px;
+            background: #0d130f;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 6px 4px;
+        }
+        .predict-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green), var(--cyan));
+        }
+        .predict-meta {
+            font-size: 0.68rem;
+            color: var(--green-dim);
+            line-height: 1.4;
+        }
+        .predict-note {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 0.72rem;
+            color: #9ca3af;
+            font-style: italic;
+        }
+        @media (max-width: 820px) {
+            .predict-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
         .footer {
             text-align: center; margin-top: 30px;
             font-size: 0.75rem; color: var(--green-dim);
@@ -935,7 +1023,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.6.3
+            &nbsp;|&nbsp; VERSION 8.6.4
         </div>
     </div>
 
@@ -1590,13 +1678,73 @@
         }
 
         let lastCsvExport = null;
+        let lastPredictionCtx = null;
 
         function downloadLastCSV() {
             if (!lastCsvExport) return;
             downloadProbabilityCSV(lastCsvExport.data, lastCsvExport.filename);
         }
 
-        function renderTailCsvButton(entries, totalNumbers, filename) {
+        function showNextDrawPrediction() {
+            const box = document.getElementById('probPredictBox');
+            if (!box || !lastPredictionCtx) return;
+
+            const { counter, totalNumbers, slotsPerDraw, regionLabel, drawsCount } = lastPredictionCtx;
+            const entries = Object.entries(counter).filter(([, info]) => info && info.count > 0);
+            if (!entries.length || !totalNumbers) {
+                box.innerHTML = `<div class="predict-box"><div class="predict-title">Không đủ dữ liệu để dự đoán</div></div>`;
+                return;
+            }
+
+            // Tìm ngày mới nhất & cũ nhất trong tập dữ liệu để tính chu kỳ
+            const allDates = entries.flatMap(([, info]) => Array.from(info.dates || [])).sort();
+            const minDateMs = allDates.length ? Date.parse(allDates[0]) : Date.now();
+            const maxDateMs = allDates.length ? Date.parse(allDates[allDates.length - 1]) : Date.now();
+            const totalSpanDays = Math.max(1, Math.round((maxDateMs - minDateMs) / 86400000) + 1);
+
+            const scored = entries.map(([num, info]) => {
+                const pSlot = info.count / totalNumbers;
+                // Xác suất xuất hiện ít nhất 1 lần trong kỳ tới (slotsPerDraw giải)
+                const pNext = 1 - Math.pow(1 - pSlot, slotsPerDraw);
+                const sortedNumDates = Array.from(info.dates || []).sort();
+                const lastIso = sortedNumDates[sortedNumDates.length - 1] || '';
+                const daysSince = lastIso ? Math.max(0, Math.round((maxDateMs - Date.parse(lastIso)) / 86400000)) : 0;
+                const avgGap = totalSpanDays / Math.max(1, info.count);
+                // Trọng số kết hợp: 75% xác suất tần suất + 25% độ chín chu kỳ
+                const cycleBoost = 0.75 + 0.25 * Math.min(1.6, daysSince / Math.max(1, avgGap));
+                const score = pNext * cycleBoost;
+                return { num, count: info.count, pNext, score, lastIso, daysSince };
+            });
+
+            scored.sort((a, b) => b.score - a.score || b.count - a.count);
+            const top10 = scored.slice(0, 10);
+            const maxP = Math.max(...top10.map(x => x.pNext), 0.01);
+
+            const cardsHtml = top10.map((item, idx) => {
+                const pctText = (item.pNext * 100).toFixed(2) + '%';
+                const barW = Math.min(100, Math.round((item.pNext / maxP) * 100));
+                const cls = idx < 3 ? 'predict-card top3' : 'predict-card';
+                return `<div class="${cls}">
+                    <div class="predict-rank">TOP #${idx + 1}</div>
+                    <div class="predict-num">${item.num}</div>
+                    <div class="predict-pct">${pctText}</div>
+                    <div class="predict-bar-wrap"><div class="predict-bar" style="width:${barW}%"></div></div>
+                    <div class="predict-meta">Về ${item.count} lần<br/>Gần nhất: ${item.lastIso ? fmtDate(item.lastIso) : '-'}</div>
+                </div>`;
+            }).join('');
+
+            box.innerHTML = `
+                <div class="predict-box">
+                    <div class="predict-title">🔮 TOP 10 SỐ DỰ ĐOÁN KỲ TIẾP THEO — ${regionLabel.toUpperCase()}</div>
+                    <div class="predict-sub">Tính trên ${drawsCount} kỳ (${slotsPerDraw} giải/kỳ) · Kết hợp tần suất nhị thức 1-(1-p)^k &amp; chu kỳ gan</div>
+                    <div class="predict-grid">${cardsHtml}</div>
+                    <div class="predict-note">⚠️ Tỷ lệ trên là ước tính thống kê từ dữ liệu lịch sử đã chọn, chỉ mang tính tham khảo — kết quả xổ số thực tế là ngẫu nhiên.</div>
+                </div>
+            `;
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function renderTailCsvButton(entries, totalNumbers, filename, enablePredict = false) {
             const csvData = entries
                 .filter(([, info]) => info && info.count > 0)
                 .map(([num, info]) => ({
@@ -1608,14 +1756,20 @@
 
             lastCsvExport = { data: csvData, filename };
 
-            return `<div style="text-align:center; margin-top:20px;">
+            const predictBtn = enablePredict
+                ? `<button class="btn" style="border-color:var(--cyan); color:var(--cyan);" onclick="showNextDrawPrediction()">🔮 DỰ ĐOÁN 10 SỐ KỲ TỚI</button>`
+                : '';
+
+            return `<div id="probPredictBox"></div>
+            <div style="display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin-top:20px;">
+                ${predictBtn}
                 <button class="btn btn-orange" onclick="downloadLastCSV()">
                     📥 TẢI CSV
                 </button>
             </div>`;
         }
 
-        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, limit = 50) {
+        function renderTailResult(counter, totalNumbers, tailLen, regionLabel, limit = 50, slotsPerDraw = 18, drawsCount = 0) {
             const sorted = Object.entries(counter)
                 .filter(([, info]) => info.count > 0)
                 .sort((a, b) => b[1].count - a[1].count);
@@ -1626,9 +1780,11 @@
             const firstText = allDates.length ? fmtDate(allDates[0]) : '-';
             const lastText = allDates.length ? fmtDate(allDates[allDates.length - 1]) : '-';
 
+            lastPredictionCtx = { counter, totalNumbers, slotsPerDraw, regionLabel, drawsCount };
+
             const title = `${topLabel} SỐ ${tailLen} ĐUÔI — ${regionLabel.toUpperCase()}`;
             return renderTailTable(top, totalNumbers, title, firstText, lastText)
-                 + renderTailCsvButton(top, totalNumbers, `xacsuat_${tailLen}so`);
+                 + renderTailCsvButton(top, totalNumbers, `xacsuat_${tailLen}so`, true);
         }
 
         function renderCustomTailResult(counter, totalNumbers, tailLen, regionLabel, requestedNumbers) {
@@ -2169,7 +2325,9 @@
                     if (!data.totalNumbers) return null;
                     return {
                         html: renderTailResult(
-                            data.counter, data.totalNumbers, tailLen, regionLabel, limit
+                            data.counter, data.totalNumbers, tailLen, regionLabel, limit,
+                            data.expectedPerDraw || EXPECTED_NUMBERS_PER_DRAW[region] || 18,
+                            data.drawsCount
                         ),
                         drawsCount: data.drawsCount,
                         totalNumbers: data.totalNumbers
@@ -2274,7 +2432,7 @@
                     }
                     probResult.innerHTML = renderTailResult(
                         data.counter, data.totalNumbers, 2,
-                        `ĐB + G8 — ${regionNames[region]}`, limit
+                        `ĐB + G8 — ${regionNames[region]}`, limit, 2, data.analyzedDraws.size
                     );
                     showProbStatus('success', `HOÀN TẤT :: ${data.analyzedDraws.size} KỲ XỔ, ${data.totalNumbers.toLocaleString()} MẪU — ĐB + G8 ${regionNames[region].toUpperCase()}${stationFilter !== 'all' ? ' — ' + stationFilter : ''}`);
                     document.getElementById('probFindForm').style.display = 'flex';

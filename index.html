@@ -543,6 +543,28 @@
             font-size: 1.25rem;
         }
 
+        .station-card.sub-station {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.11), rgba(96, 165, 250, 0.05));
+            border-right: 2px solid #38bdf8;
+        }
+        .station-card.sub-station .station-header {
+            background: linear-gradient(90deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.08));
+            border-bottom: 2px solid #38bdf8;
+        }
+        .station-card.sub-station .station-name {
+            color: #7dd3fc;
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
+        }
+        .station-card.sub-station .prize-numbers {
+            color: #bae6fd;
+            text-shadow: 0 0 4px rgba(56, 189, 248, 0.35);
+        }
+        .station-card.sub-station .special-prize {
+            color: #38bdf8;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+            font-size: 1.22rem;
+        }
+
         .station-header {
             background: rgba(0, 255, 65, 0.06);
             padding: 8px 12px;
@@ -878,9 +900,9 @@
             <div class="calendar-section" id="calendarSection" style="display:none;">
                 <div class="calendar-title">
                     <span onclick="toggleCalendar()">
-                        <span id="calToggle">▼</span> DATA_STATUS_BY_MONTH
+                        <span id="calToggle">▶</span> DATA_STATUS_BY_MONTH
                     </span>
-                    <div class="legend" id="calLegend">
+                    <div class="legend" id="calLegend" style="display:none;">
                         <div class="legend-item">
                             <div class="legend-dot have"></div>
                             <span>AVAILABLE</span>
@@ -891,7 +913,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="calendarWrap">
+                <div id="calendarWrap" class="collapsed">
                     <div id="calendar"></div>
                 </div>
             </div>
@@ -1084,7 +1106,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank" rel="noopener noreferrer">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.7.3
+            &nbsp;|&nbsp; VERSION 8.7.7
         </div>
     </div>
 
@@ -1092,6 +1114,11 @@
         const MAIN_STATIONS_MN = {
             1: "Đồng Tháp", 2: "Vũng Tàu", 3: "Sóc Trăng",
             4: "Bình Thuận", 5: "Bình Dương", 6: "Bình Phước", 0: "Đà Lạt",
+        };
+
+        const SUB_STATIONS_MN = {
+            1: "TP. HCM", 2: "Bến Tre", 3: "Đồng Nai",
+            4: "Tây Ninh", 5: "Vĩnh Long", 6: "TP. HCM", 0: "Tiền Giang",
         };
 
         const STATIONS_BY_REGION = {
@@ -1171,6 +1198,11 @@
 
         function getCurrentYearVN() {
             return Number(getTodayISODateVN().slice(0, 4));
+        }
+
+        function getTodayWeekdayVN() {
+            const [y, m, d] = getTodayISODateVN().split('-').map(Number);
+            return String(new Date(Date.UTC(y, m - 1, d)).getUTCDay());
         }
 
         function getDefaultDateVN() {
@@ -1403,14 +1435,17 @@
             }
             const [y, m, d] = currentIsoDate.split('-');
             const weekday = new Date(parseInt(y), parseInt(m) - 1, parseInt(d)).getDay();
-            const mainStationName = MAIN_STATIONS_MN[weekday] || "";
+            const mainStationName = normalizeStationName(MAIN_STATIONS_MN[weekday] || "");
+            const subStationName = normalizeStationName(SUB_STATIONS_MN[weekday] || "");
 
             let html = '';
             data.regions.forEach(r => {
                 html += `<div class="region region-${r.key}"><div class="region-header">${r.name}</div><div class="station-grid">`;
                 (r.stations || []).forEach((st) => {
-                    const isMain = (r.key === 'nam' && st.name.trim() === mainStationName);
-                    const cardClass = isMain ? 'station-card main-station' : 'station-card';
+                    const normSt = normalizeStationName(st.name);
+                    const isMain = (r.key === 'nam' && mainStationName && normSt === mainStationName);
+                    const isSub = (r.key === 'nam' && subStationName && normSt === subStationName);
+                    const cardClass = isMain ? 'station-card main-station' : (isSub ? 'station-card sub-station' : 'station-card');
                     html += `<div class="${cardClass}"><div class="station-header"><span class="station-name">${st.name}</span><span class="station-code">${st.code || ''}</span></div><table class="prize-table">`;
                     (st.prizes || []).forEach(p => {
                         const cls = p.label === 'Giải ĐB' ? 'prize-numbers special-prize' : 'prize-numbers';
@@ -1571,13 +1606,13 @@
                 if (probStationGroup) probStationGroup.style.display = '';
                 probStation.innerHTML = '<option value="all">Tất cả đài trong tuần</option>';
                 const mbStationLabels = [
-                    { value: '1|Hà Nội',     label: 'Thứ 2: Đài Hà Nội' },
-                    { value: '2|Quảng Ninh', label: 'Thứ 3: Đài Quảng Ninh' },
-                    { value: '3|Bắc Ninh',   label: 'Thứ 4: Đài Bắc Ninh' },
-                    { value: '4|Hà Nội',     label: 'Thứ 5: Đài Hà Nội' },
-                    { value: '5|Hải Phòng',  label: 'Thứ 6: Đài Hải Phòng' },
-                    { value: '6|Nam Định',   label: 'Thứ 7: Đài Nam Định' },
-                    { value: '0|Thái Bình',  label: 'Chủ Nhật: Đài Thái Bình' },
+                    { value: '1|Hà Nội',     label: 'Thứ 2: Hà Nội' },
+                    { value: '2|Quảng Ninh', label: 'Thứ 3: Quảng Ninh' },
+                    { value: '3|Bắc Ninh',   label: 'Thứ 4: Bắc Ninh' },
+                    { value: '4|Hà Nội',     label: 'Thứ 5: Hà Nội' },
+                    { value: '5|Hải Phòng',  label: 'Thứ 6: Hải Phòng' },
+                    { value: '6|Nam Định',   label: 'Thứ 7: Nam Định' },
+                    { value: '0|Thái Bình',  label: 'Chủ Nhật: Thái Bình' },
                 ];
                 mbStationLabels.forEach(({ value, label }) => {
                     const option = document.createElement('option');
@@ -1585,7 +1620,9 @@
                     option.textContent = label;
                     probStation.appendChild(option);
                 });
-                probStation.value = 'all';
+                const todayWd = getTodayWeekdayVN();
+                const todayMb = mbStationLabels.find(item => item.value.startsWith(todayWd + '|'));
+                probStation.value = todayMb ? todayMb.value : 'all';
                 return;
             }
 
@@ -1623,7 +1660,7 @@
         }
 
         probRegion.addEventListener('change', () => {
-            probWeekday.value = 'all';
+            probWeekday.value = getTodayWeekdayVN();
             probStation.value = 'all';
             updateStationDropdown();
             resetProbabilitySubFilters();
@@ -1642,7 +1679,7 @@
 
         probType.addEventListener('change', updateProbabilityExtra);
 
-        probWeekday.value = 'all';
+        probWeekday.value = getTodayWeekdayVN();
         probStation.value = 'all';
         updateStationDropdown();
         probType.value = '2so';

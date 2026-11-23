@@ -1084,7 +1084,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank" rel="noopener noreferrer">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.7.2
+            &nbsp;|&nbsp; VERSION 8.7.3
         </div>
     </div>
 
@@ -1571,12 +1571,13 @@
                 if (probStationGroup) probStationGroup.style.display = '';
                 probStation.innerHTML = '<option value="all">Tất cả đài trong tuần</option>';
                 const mbStationLabels = [
-                    { value: 'Hà Nội',     label: 'Thứ 2 & Thứ 5: Đài Hà Nội' },
-                    { value: 'Quảng Ninh', label: 'Thứ 3: Đài Quảng Ninh' },
-                    { value: 'Bắc Ninh',   label: 'Thứ 4: Đài Bắc Ninh' },
-                    { value: 'Hải Phòng',  label: 'Thứ 6: Đài Hải Phòng' },
-                    { value: 'Nam Định',   label: 'Thứ 7: Đài Nam Định' },
-                    { value: 'Thái Bình',  label: 'Chủ Nhật: Đài Thái Bình' },
+                    { value: '1|Hà Nội',     label: 'Thứ 2: Đài Hà Nội' },
+                    { value: '2|Quảng Ninh', label: 'Thứ 3: Đài Quảng Ninh' },
+                    { value: '3|Bắc Ninh',   label: 'Thứ 4: Đài Bắc Ninh' },
+                    { value: '4|Hà Nội',     label: 'Thứ 5: Đài Hà Nội' },
+                    { value: '5|Hải Phòng',  label: 'Thứ 6: Đài Hải Phòng' },
+                    { value: '6|Nam Định',   label: 'Thứ 7: Đài Nam Định' },
+                    { value: '0|Thái Bình',  label: 'Chủ Nhật: Đài Thái Bình' },
                 ];
                 mbStationLabels.forEach(({ value, label }) => {
                     const option = document.createElement('option');
@@ -2372,8 +2373,13 @@
         btnAnalyze.addEventListener('click', async () => {
             const type = probType.value;
             const region = probRegion.value;
-            const weekdayFilter = region === 'bac' ? 'all' : probWeekday.value;
-            const stationFilter = region === 'bac' ? probStation.value : (weekdayFilter === 'all' ? 'all' : probStation.value);
+            let weekdayFilter = region === 'bac' ? 'all' : probWeekday.value;
+            let stationFilter = region === 'bac' ? probStation.value : (weekdayFilter === 'all' ? 'all' : probStation.value);
+            if (region === 'bac' && stationFilter.includes('|')) {
+                const [mbWd, mbStation] = stationFilter.split('|');
+                weekdayFilter = mbWd;
+                stationFilter = mbStation;
+            }
             const mode = document.querySelector('input[name="rangeMode"]:checked').value;
             const limit = parseInt(probLimit.value, 10);
             const isCustomMode = probLimit.value === 'custom';

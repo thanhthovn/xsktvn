@@ -342,6 +342,19 @@
             border-left: 3px solid var(--green); border-radius: 3px;
             padding: 10px 18px; text-align: center; min-width: 150px;
         }
+        .stat-box.stat-btn {
+            cursor: pointer; font-family: inherit;
+            background: #0b4a2b; border: 1px solid var(--cyan);
+            border-left: 3px solid var(--cyan);
+            transition: all 0.2s;
+        }
+        .stat-box.stat-btn:hover {
+            background: #116b3e;
+            box-shadow: 0 0 14px rgba(0, 255, 255, 0.45);
+            transform: translateY(-1px);
+        }
+        .stat-box.stat-btn .num { color: var(--cyan); text-shadow: 0 0 6px var(--cyan); }
+        .stat-box.stat-btn .label { color: #e0ffff; }
         .stat-box .num {
             font-size: 1.4rem; font-weight: 800; color: var(--green);
             text-shadow: 0 0 5px rgba(53, 208, 111, 0.45); font-family: 'Consolas', 'Cascadia Mono', 'Courier New', monospace;
@@ -491,9 +504,9 @@
         }
         .region-header::before { content: '>>> '; opacity: 0.7; }
         .region-nam .region-header {
-            background: linear-gradient(90deg, #234b32, #326845);
-            color: var(--green); border: 1px solid var(--green);
-            text-shadow: 0 0 6px var(--green);
+            background: linear-gradient(90deg, #4e4216, #6e5c1f);
+            color: var(--yellow); border: 1px solid var(--yellow);
+            text-shadow: 0 0 6px var(--yellow);
         }
         .region-trung .region-header {
             background: linear-gradient(90deg, #24465a, #32657e);
@@ -897,12 +910,24 @@
 
             <div id="result"></div>
 
+            <div class="stats" id="stats" style="display:none;">
+                <button type="button" class="stat-box stat-btn" id="btnToggleCalendar" onclick="toggleCalendar()" title="Xem trạng thái dữ liệu theo tháng">
+                    <div class="num" id="calToggle">▶</div>
+                    <div class="label">DATA_STATUS_BY_MONTH</div>
+                </button>
+                <div class="stat-box">
+                    <div class="num" id="statTotal">0</div>
+                    <div class="label">Days_Available</div>
+                </div>
+                <div class="stat-box">
+                    <div class="num" id="statUpdated" style="font-size:0.85rem;">-</div>
+                    <div class="label">Last_Update</div>
+                </div>
+            </div>
+
             <div class="calendar-section" id="calendarSection" style="display:none;">
                 <div class="calendar-title">
-                    <span onclick="toggleCalendar()">
-                        <span id="calToggle">▶</span> DATA_STATUS_BY_MONTH
-                    </span>
-                    <div class="legend" id="calLegend" style="display:none;">
+                    <div class="legend" id="calLegend">
                         <div class="legend-item">
                             <div class="legend-dot have"></div>
                             <span>AVAILABLE</span>
@@ -913,19 +938,8 @@
                         </div>
                     </div>
                 </div>
-                <div id="calendarWrap" class="collapsed">
+                <div id="calendarWrap">
                     <div id="calendar"></div>
-                </div>
-            </div>
-
-            <div class="stats" id="stats" style="display:none;">
-                <div class="stat-box">
-                    <div class="num" id="statTotal">0</div>
-                    <div class="label">Days_Available</div>
-                </div>
-                <div class="stat-box">
-                    <div class="num" id="statUpdated" style="font-size:0.85rem;">-</div>
-                    <div class="label">Last_Update</div>
                 </div>
             </div>
         </div>
@@ -1106,7 +1120,7 @@
 
         <div class="footer">
             SOURCE: <a href="https://www.minhngoc.net" target="_blank" rel="noopener noreferrer">www.minhngoc.net</a>
-            &nbsp;|&nbsp; VERSION 8.7.7
+            &nbsp;|&nbsp; VERSION 8.7.9
         </div>
     </div>
 
@@ -1284,18 +1298,16 @@
             }
         }
         function toggleCalendar() {
-            const wrap = document.getElementById('calendarWrap');
             const toggle = document.getElementById('calToggle');
-            const legend = document.getElementById('calLegend');
+            const isHidden = calendarSection.style.display === 'none';
 
-            if (wrap.classList.contains('collapsed')) {
-                wrap.classList.remove('collapsed');
+            if (isHidden) {
+                calendarSection.style.display = 'block';
                 toggle.textContent = '▼';
-                legend.style.display = 'flex';
+                calendarSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } else {
-                wrap.classList.add('collapsed');
+                calendarSection.style.display = 'none';
                 toggle.textContent = '▶';
-                legend.style.display = 'none';
             }
         }
 
@@ -1371,7 +1383,7 @@
                 document.getElementById('statUpdated').textContent = data.updated || '-';
                 statsBox.style.display = 'flex';
                 renderCalendar();
-                calendarSection.style.display = 'block';
+                calendarSection.style.display = 'none';
 
                 const sortedDates = Array.from(availableDates).sort().reverse();
                 if (sortedDates.length > 0) {
